@@ -1277,3 +1277,99 @@ job inboxAiReply {
   entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction]
 }
 //#endregion
+
+//#region Video Studio Extension
+route VideoStudioRoute { path: "/video-studio", to: VideoStudioPage }
+page VideoStudioPage {
+  authRequired: true,
+  component: import VideoStudioPage from "@src/extensions/video-studio/VideoStudioPage"
+}
+
+route VideoGenerateRoute { path: "/video-studio/generate", to: VideoGeneratePage }
+page VideoGeneratePage {
+  authRequired: true,
+  component: import VideoGeneratePage from "@src/extensions/video-studio/VideoGeneratePage"
+}
+
+route VideoGalleryRoute { path: "/video-studio/gallery", to: VideoGalleryPage }
+page VideoGalleryPage {
+  authRequired: true,
+  component: import VideoGalleryPage from "@src/extensions/video-studio/VideoGalleryPage"
+}
+
+route VideoDetailRoute { path: "/video-studio/video/:id", to: VideoDetailPage }
+page VideoDetailPage {
+  authRequired: true,
+  component: import VideoDetailPage from "@src/extensions/video-studio/VideoDetailPage"
+}
+
+// Queries
+query getVideoProjects {
+  fn: import { getVideoProjects } from "@src/extensions/video-studio/operations",
+  entities: [VideoProject, VideoGeneration, UserExtension]
+}
+
+query getVideoProject {
+  fn: import { getVideoProject } from "@src/extensions/video-studio/operations",
+  entities: [VideoProject, VideoGeneration, UserExtension]
+}
+
+query getVideoGenerations {
+  fn: import { getVideoGenerations } from "@src/extensions/video-studio/operations",
+  entities: [VideoGeneration, VideoProject, UserExtension]
+}
+
+query getVideoGeneration {
+  fn: import { getVideoGeneration } from "@src/extensions/video-studio/operations",
+  entities: [VideoGeneration, VideoProject, UserExtension]
+}
+
+// Actions: Project CRUD
+action createVideoProject {
+  fn: import { createVideoProject } from "@src/extensions/video-studio/operations",
+  entities: [VideoProject, UserExtension]
+}
+
+action updateVideoProject {
+  fn: import { updateVideoProject } from "@src/extensions/video-studio/operations",
+  entities: [VideoProject, UserExtension]
+}
+
+action deleteVideoProject {
+  fn: import { deleteVideoProject } from "@src/extensions/video-studio/operations",
+  entities: [VideoProject, UserExtension]
+}
+
+// Actions: Generation
+action generateVideo {
+  fn: import { generateVideo } from "@src/extensions/video-studio/generationOperations",
+  entities: [VideoGeneration, VideoProject, UserExtension, Setting, User, CreditTransaction]
+}
+
+action checkVideoStatus {
+  fn: import { checkVideoStatus } from "@src/extensions/video-studio/generationOperations",
+  entities: [VideoGeneration, UserExtension, Setting, User, CreditTransaction]
+}
+
+action retryVideoGeneration {
+  fn: import { retryVideoGeneration } from "@src/extensions/video-studio/generationOperations",
+  entities: [VideoGeneration, UserExtension, Setting, User, CreditTransaction]
+}
+
+action deleteVideoGeneration {
+  fn: import { deleteVideoGeneration } from "@src/extensions/video-studio/generationOperations",
+  entities: [VideoGeneration, UserExtension]
+}
+
+// Job: Poll fal.ai for processing videos
+job videoStatusCheck {
+  executor: PgBoss,
+  perform: {
+    fn: import { videoStatusCheck } from "@src/extensions/video-studio/videoCheckJob"
+  },
+  schedule: {
+    cron: "* * * * *"
+  },
+  entities: [VideoGeneration, Setting, User, CreditTransaction]
+}
+//#endregion

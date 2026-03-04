@@ -15,6 +15,9 @@ export enum CreditActionType {
   ReworkSeo = "rework_seo",
   ArticleFromBrief = "article_from_brief",
   InboxAiReply = "inbox_ai_reply",
+  VideoBasic = "video_basic",
+  VideoStandard = "video_standard",
+  VideoPremium = "video_premium",
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +37,9 @@ export const CREDIT_COSTS: Record<CreditActionType, number> = {
   [CreditActionType.ReworkSeo]: 40,
   [CreditActionType.ArticleFromBrief]: 40,
   [CreditActionType.InboxAiReply]: 2,
+  [CreditActionType.VideoBasic]: 15,
+  [CreditActionType.VideoStandard]: 30,
+  [CreditActionType.VideoPremium]: 60,
 };
 
 // ---------------------------------------------------------------------------
@@ -87,4 +93,7 @@ export const ACTION_LABELS: Record<CreditActionType, string> = {
   [CreditActionType.ReworkSeo]: "SEO article rework",
   [CreditActionType.ArticleFromBrief]: "Article from brief",
   [CreditActionType.InboxAiReply]: "Inbox AI reply",
+  [CreditActionType.VideoBasic]: "Video generation (budget)",
+  [CreditActionType.VideoStandard]: "Video generation (standard)",
+  [CreditActionType.VideoPremium]: "Video generation (premium)",
 };

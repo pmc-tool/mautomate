@@ -49,6 +49,18 @@ export const EXTENSION_REGISTRY: ExtensionDefinition[] = [
     isEnabled: true,
   },
   {
+    id: "video-studio",
+    name: "Video Studio",
+    description: "AI video generation — text-to-video, image-to-video, AI avatars, and upscaling powered by fal.ai.",
+    icon: "Video",
+    category: "ai",
+    route: "/video-studio",
+    settingsKeys: ["ext.video-studio.fal_api_key", "ext.video-studio.price", "ext.video-studio.stripe_price_id"],
+    isFree: false,
+    defaultPrice: 15,
+    isEnabled: true,
+  },
+  {
     id: "central-inbox",
     name: "Central Inbox",
     description: "Unified inbox for AI + human agent conversations across website, WhatsApp, Telegram, Messenger, and Instagram.",

@@ -6,6 +6,7 @@ import {
   ImagePlus,
   Inbox,
   LayoutDashboard,
+  Video,
   Link2,
   Megaphone,
   Search,
@@ -29,6 +30,7 @@ const EXTENSION_ICON_MAP: Record<string, LucideIcon> = {
   Share2: Share2,
   Search: Search,
   Inbox: Inbox,
+  Video: Video,
 };
 
 interface UserSidebarProps {
