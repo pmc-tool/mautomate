@@ -2,13 +2,12 @@
 
 ## What is this?
 AI marketing automation SaaS built on **Wasp 0.21** (React + Node + Prisma + PostgreSQL).
-Forked/inspired by MagicAI (Laravel) but rebuilt as a modern JS stack.
 
 ## Project Root
-All app code lives in `template/app/`. Key paths:
-- `template/app/main.wasp` — ALL route, page, query, action declarations
-- `template/app/schema.prisma` — ALL database models
-- `template/app/src/` — source code (client + server)
+This IS the app root. Key paths:
+- `main.wasp` — ALL route, page, query, action declarations
+- `schema.prisma` — ALL database models
+- `src/` — source code (client + server)
 
 ## Architecture
 - **Wasp framework**: declarations in `main.wasp` auto-generate types, API routes, auth
@@ -31,6 +30,8 @@ All app code lives in `template/app/`. Key paths:
 | `admin/` | Admin dashboard + settings | `elements/settings/` |
 | `payment/` | Stripe checkout, webhooks, plans | `stripe/webhook.ts` |
 | `user-dashboard/` | Dashboard layout + sidebar | `layout/`, `sidebar/` |
+| `credits/` | Unified 3-bucket credit system | `creditConfig.ts`, `creditService.ts` |
+| `extensions/central-inbox/` | Central Inbox (AI + human agent chat) | `operations.ts`, `webhookRoutes.ts` |
 
 ## Conventions
 - **Actions/Queries**: Declared in `main.wasp`, implemented in `src/<module>/operations.ts`
@@ -44,19 +45,20 @@ All app code lives in `template/app/`. Key paths:
 - `User`, `Setting` (key-value config), `UserExtension` (purchased extensions)
 - `Chatbot`, `ChatbotData`, `ChatbotChannel`
 - `Post`, `PostRevision`, `PostMedia` (Post Hub)
-- `BrandVoice`
+- `BrandVoice`, `CreditTransaction`
 - `SocialAppCredential`, `SocialAccount`, `OAuthState`
-
-## MagicAI Reference
-The original Laravel codebase is at `../app/` (parent directory). Used as reference for feature parity.
-Do NOT copy Laravel code directly — translate patterns to Wasp/React/Node.
+- `InboxConversation`, `InboxMessage`, `InboxContact`, `InboxNote`, `InboxCannedResponse`
 
 ## Dev Commands
 ```bash
-cd template/app
 npx wasp start          # Dev server (client :3000, server :3001)
 npx wasp db migrate-dev # Run migrations after schema.prisma changes
 npx wasp db studio      # Prisma Studio (DB browser)
+```
+
+## Deploy
+```bash
+./deploy.sh             # One-command deploy to production (mautomate.ai)
 ```
 
 ## Important Notes
