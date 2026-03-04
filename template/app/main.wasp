@@ -1,0 +1,1279 @@
+app mAutomate {
+  wasp: {
+    version: "^0.21.0"
+  },
+
+  title: "mAutomate",
+
+  head: [
+    "<link rel='icon' type='image/png' href='/favicon.ico' />",
+
+    "<meta name='description' content='mAutomate.ai is an AI marketing automation platform for campaign orchestration, audience segmentation, and revenue attribution.' />",
+    "<meta name='author' content='mAutomate.ai' />",
+    "<meta name='keywords' content='marketing automation, AI marketing, campaign orchestration, lead scoring, attribution, mAutomate.ai' />",
+
+    "<meta property='og:type' content='website' />",
+    "<meta property='og:title' content='mAutomate' />",
+    "<meta property='og:site_name' content='mAutomate' />",
+    "<meta property='og:url' content='https://mautomate.ai' />",
+    "<meta property='og:description' content='Automate and optimize multi-channel marketing with AI workflows and attribution analytics.' />",
+    "<meta property='og:image' content='https://mautomate.ai/public-banner.webp' />",
+    "<meta name='twitter:image' content='https://mautomate.ai/public-banner.webp' />",
+    "<meta name='twitter:image:width' content='800' />",
+    "<meta name='twitter:image:height' content='400' />",
+    "<meta name='twitter:card' content='summary_large_image' />",
+    // TODO: You can put your Plausible analytics scripts below (https://docs.opensaas.sh/guides/analytics/):
+    // NOTE: Plausible does not use Cookies, so you can simply add the scripts here.
+    // Google, on the other hand, does, so you must instead add the script dynamically
+    // via the Cookie Consent component after the user clicks the "Accept" cookies button.
+    "<script defer data-domain='<your-site-id>' src='https://plausible.io/js/script.js'></script>",  // for production
+    "<script defer data-domain='<your-site-id>' src='https://plausible.io/js/script.local.js'></script>",  // for development
+  ],
+
+  // 🔐 Auth out of the box! https://wasp.sh/docs/auth/overview
+  auth: {
+    userEntity: User,
+    methods: {
+      // NOTE: If you decide to not use email auth, make sure to also delete the related routes and pages below.
+      //   (RequestPasswordReset(Route|Page), PasswordReset(Route|Page), EmailVerification(Route|Page))
+      email: {
+        fromField: {
+          name: "mAutomate",
+          email: "me@example.com"
+        },
+        emailVerification: {
+          clientRoute: EmailVerificationRoute,
+          getEmailContentFn: import { getVerificationEmailContent } from "@src/auth/email-and-pass/emails",
+        },
+        passwordReset: {
+          clientRoute: PasswordResetRoute,
+          getEmailContentFn: import { getPasswordResetEmailContent } from "@src/auth/email-and-pass/emails",
+        },
+        userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
+      },
+      // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
+      // google: { // Guide for setting up Auth via Google
+      //   userSignupFields: import { getGoogleUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getGoogleAuthConfig } from "@src/auth/userSignupFields",
+      // },
+      // Uncomment to enable GitHub Auth (check https://wasp.sh/docs/auth/social-auth/github for setup instructions):
+      // gitHub: {
+      //   userSignupFields: import { getGitHubUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getGitHubAuthConfig } from "@src/auth/userSignupFields",
+      // },
+      // Uncomment to enable Discord Auth (check https://wasp.sh/docs/auth/social-auth/discord for setup instructions):
+      // discord: {
+      //   userSignupFields: import { getDiscordUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getDiscordAuthConfig } from "@src/auth/userSignupFields"
+      // }
+    },
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/dashboard",
+  },
+
+  db: {
+    // Run `wasp db seed` to seed the database with the seed functions below:
+    seeds: [
+      // Populates the database with a bunch of fake users to work with during development.
+      import { seedMockUsers } from "@src/server/scripts/dbSeeds",
+    ]
+  },
+
+  client: {
+    rootComponent: import App from "@src/client/App",
+  },
+
+  emailSender: {
+    provider: SMTP,
+    defaultFrom: {
+      name: "mAutomate",
+      email: "noreply@mautomate.ai"
+    },
+  },
+
+  server: {
+    setupFn: import { serverSetup } from "@src/server/setup",
+    middlewareConfigFn: import { serverMiddlewareFn } from "@src/server/middleware"
+  },
+
+  webSocket: {
+    fn: import { webSocketFn } from "@src/extensions/central-inbox/webSocket",
+    autoConnect: true,
+  },
+}
+
+route LandingPageRoute { path: "/", to: LandingPage }
+page LandingPage {
+  component: import LandingPage from "@src/landing-page/LandingPage"
+}
+
+//#region Blog
+route BlogPageRoute { path: "/blog", to: BlogPage }
+page BlogPage {
+  component: import BlogPage from "@src/blog/BlogPage"
+}
+
+route BlogPostPageRoute { path: "/blog/:slug", to: BlogPostPage }
+page BlogPostPage {
+  component: import BlogPostPage from "@src/blog/BlogPostPage"
+}
+
+query getPublishedBlogPosts {
+  fn: import { getPublishedBlogPosts } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+query getPublishedBlogPostBySlug {
+  fn: import { getPublishedBlogPostBySlug } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+//#endregion
+
+//#region Help Center
+route ArticlesPageRoute { path: "/articles", to: ArticlesPage }
+page ArticlesPage {
+  component: import ArticlesPage from "@src/help-center/ArticlesPage"
+}
+
+route ArticlePageRoute { path: "/articles/:slug", to: ArticlePage }
+page ArticlePage {
+  component: import ArticlePage from "@src/help-center/ArticlePage"
+}
+
+query getPublishedHelpArticles {
+  fn: import { getPublishedHelpArticles } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+query getPublishedHelpArticleBySlug {
+  fn: import { getPublishedHelpArticleBySlug } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+//#endregion
+
+//#region Auth Pages
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import Login from "@src/auth/LoginPage"
+}
+
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import { Signup } from "@src/auth/SignupPage"
+}
+
+route RequestPasswordResetRoute { path: "/request-password-reset", to: RequestPasswordResetPage }
+page RequestPasswordResetPage {
+  component: import { RequestPasswordResetPage } from "@src/auth/email-and-pass/RequestPasswordResetPage",
+}
+
+route PasswordResetRoute { path: "/password-reset", to: PasswordResetPage }
+page PasswordResetPage {
+  component: import { PasswordResetPage } from "@src/auth/email-and-pass/PasswordResetPage",
+}
+
+route EmailVerificationRoute { path: "/email-verification", to: EmailVerificationPage }
+page EmailVerificationPage {
+  component: import { EmailVerificationPage } from "@src/auth/email-and-pass/EmailVerificationPage",
+}
+//#endregion
+
+//#region User Dashboard
+route UserDashboardRoute { path: "/dashboard", to: UserDashboardPage }
+page UserDashboardPage {
+  authRequired: true,
+  component: import UserDashboardPage from "@src/user-dashboard/UserDashboardPage"
+}
+
+query getDashboardStats {
+  fn: import { getDashboardStats } from "@src/user-dashboard/dashboardOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, UserExtension]
+}
+//#endregion
+
+//#region User
+route AccountRoute { path: "/account", to: AccountPage }
+page AccountPage {
+  authRequired: true,
+  component: import Account from "@src/user/AccountPage"
+}
+
+query getPaginatedUsers {
+  fn: import { getPaginatedUsers } from "@src/user/operations",
+  entities: [User]
+}
+
+action updateIsUserAdminById {
+  fn: import { updateIsUserAdminById } from "@src/user/operations",
+  entities: [User]
+}
+
+action updateUserProfile {
+  fn: import { updateUserProfile } from "@src/user/profileOperations",
+  entities: [User]
+}
+//#endregion
+
+//#endregion
+
+//#region Payment
+route PricingPageRoute { path: "/pricing", to: PricingPage }
+page PricingPage {
+  component: import PricingPage from "@src/payment/PricingPage"
+}
+
+route CheckoutResultRoute { path: "/checkout", to: CheckoutResultPage }
+page CheckoutResultPage {
+  authRequired: true,
+  component: import CheckoutResultPage from "@src/payment/CheckoutResultPage"
+}
+
+query getCustomerPortalUrl {
+  fn: import { getCustomerPortalUrl } from  "@src/payment/operations",
+  entities: [User]
+}
+
+action generateCheckoutSession {
+  fn: import { generateCheckoutSession } from "@src/payment/operations",
+  entities: [User]
+}
+
+api paymentsWebhook {
+  fn: import { paymentsWebhook } from "@src/payment/webhook",
+  entities: [User, UserExtension, Setting, CreditTransaction],
+  middlewareConfigFn: import { paymentsMiddlewareConfigFn } from "@src/payment/webhook",
+  httpRoute: (POST, "/payments-webhook")
+}
+//#endregion
+
+//#region Credits
+query getCreditsBalance {
+  fn: import { getCreditsBalance } from "@src/credits/creditOperations",
+  entities: [User]
+}
+
+query getCreditTransactions {
+  fn: import { getCreditTransactions } from "@src/credits/creditOperations",
+  entities: [CreditTransaction]
+}
+
+job resetMonthlyCredits {
+  executor: PgBoss,
+  perform: {
+    fn: import { resetMonthlyCredits } from "@src/credits/creditResetJob"
+  },
+  schedule: {
+    cron: "0 0 * * *"
+  },
+  entities: [User, CreditTransaction]
+}
+//#endregion
+
+//#region File Upload
+route FileUploadRoute { path: "/file-upload", to: FileUploadPage }
+page FileUploadPage {
+  authRequired: true,
+  component: import FileUpload from "@src/file-upload/FileUploadPage"
+}
+
+action uploadFile {
+  fn: import { uploadFile } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query getAllFilesByUser {
+  fn: import { getAllFilesByUser } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query getDownloadFileSignedURL {
+  fn: import { getDownloadFileSignedURL } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+action deleteFile {
+  fn: import { deleteFile } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query getFileSignedURLsBatch {
+  fn: import { getFileSignedURLsBatch } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+//#endregion
+
+//#region Analytics
+query getDailyStats {
+  fn: import { getDailyStats } from "@src/analytics/operations",
+  entities: [User, DailyStats]
+}
+
+job dailyStatsJob {
+  executor: PgBoss,
+  perform: {
+    fn: import { calculateDailyStats } from "@src/analytics/stats"
+  },
+  schedule: {
+    cron: "0 * * * *" // every hour. useful in production
+    // cron: "* * * * *" // every minute. useful for debugging
+  },
+  entities: [User, DailyStats, Logs, PageViewSource]
+}
+//#endregion
+
+//#region Admin Dashboard
+route AdminRoute { path: "/admin", to: AnalyticsDashboardPage }
+page AnalyticsDashboardPage {
+  authRequired: true,
+  component: import AnalyticsDashboardPage from "@src/admin/dashboards/analytics/AnalyticsDashboardPage"
+}
+
+route AdminUsersRoute { path: "/admin/users", to: AdminUsersPage }
+page AdminUsersPage {
+  authRequired: true,
+  component: import AdminUsers from "@src/admin/dashboards/users/UsersDashboardPage"
+}
+
+route AdminSettingsRoute { path: "/admin/settings", to: AdminSettingsPage }
+page AdminSettingsPage {
+  authRequired: true,
+  component: import AdminSettings from "@src/admin/elements/settings/SettingsPage"
+}
+
+route AdminCalendarRoute { path: "/admin/calendar", to: AdminCalendarPage }
+page AdminCalendarPage {
+  authRequired: true,
+  component: import AdminCalendar from "@src/admin/elements/calendar/CalendarPage"
+}
+
+
+route AdminUIButtonsRoute { path: "/admin/ui/buttons", to: AdminUIButtonsPage }
+page AdminUIButtonsPage {
+  authRequired: true,
+  component: import AdminUI from "@src/admin/elements/ui-elements/ButtonsPage"
+}
+
+route AdminBlogRoute { path: "/admin/blog", to: AdminBlogPage }
+page AdminBlogPage {
+  authRequired: true,
+  component: import AdminBlogPage from "@src/admin/dashboards/blog/AdminBlogPage"
+}
+
+route AdminBlogNewRoute { path: "/admin/blog/new", to: AdminBlogFormPage }
+page AdminBlogFormPage {
+  authRequired: true,
+  component: import AdminBlogFormPage from "@src/admin/dashboards/blog/AdminBlogFormPage"
+}
+
+route AdminBlogEditRoute { path: "/admin/blog/:id/edit", to: AdminBlogEditPage }
+page AdminBlogEditPage {
+  authRequired: true,
+  component: import AdminBlogFormPage from "@src/admin/dashboards/blog/AdminBlogFormPage"
+}
+
+query getAdminBlogPosts {
+  fn: import { getAdminBlogPosts } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+query getAdminBlogPostById {
+  fn: import { getAdminBlogPostById } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+action createBlogPost {
+  fn: import { createBlogPost } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+action updateBlogPost {
+  fn: import { updateBlogPost } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+action deleteBlogPost {
+  fn: import { deleteBlogPost } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+action setBlogPostStatus {
+  fn: import { setBlogPostStatus } from "@src/blog/operations",
+  entities: [BlogPost, User]
+}
+
+route AdminArticlesRoute { path: "/admin/articles", to: AdminArticlesPage }
+page AdminArticlesPage {
+  authRequired: true,
+  component: import AdminArticlesPage from "@src/admin/dashboards/articles/AdminArticlesPage"
+}
+
+route AdminArticlesNewRoute { path: "/admin/articles/new", to: AdminArticlesFormPage }
+page AdminArticlesFormPage {
+  authRequired: true,
+  component: import AdminArticlesFormPage from "@src/admin/dashboards/articles/AdminArticlesFormPage"
+}
+
+route AdminArticlesEditRoute { path: "/admin/articles/:id/edit", to: AdminArticlesEditPage }
+page AdminArticlesEditPage {
+  authRequired: true,
+  component: import AdminArticlesFormPage from "@src/admin/dashboards/articles/AdminArticlesFormPage"
+}
+
+query getAdminHelpArticles {
+  fn: import { getAdminHelpArticles } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+query getAdminHelpArticleById {
+  fn: import { getAdminHelpArticleById } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+action createHelpArticle {
+  fn: import { createHelpArticle } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+action updateHelpArticle {
+  fn: import { updateHelpArticle } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+action deleteHelpArticle {
+  fn: import { deleteHelpArticle } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+action setHelpArticleStatus {
+  fn: import { setHelpArticleStatus } from "@src/help-center/operations",
+  entities: [HelpArticle, User]
+}
+
+route NotFoundRoute { path: "*", to: NotFoundPage }
+page NotFoundPage {
+  component: import { NotFoundPage } from "@src/client/components/NotFoundPage"
+}
+//#endregion
+
+//#region Extension Marketplace
+route AdminExtensionsRoute { path: "/admin/extensions", to: AdminExtensionsPage }
+page AdminExtensionsPage {
+  authRequired: true,
+  component: import AdminExtensionsPage from "@src/extensions/admin/AdminExtensionsPage"
+}
+
+route MarketplaceRoute { path: "/marketplace", to: MarketplacePage }
+page MarketplacePage {
+  authRequired: true,
+  component: import MarketplacePage from "@src/extensions/marketplace/MarketplacePage"
+}
+
+route AiImageGeneratorRoute { path: "/extensions/ai-image-generator", to: AiImageGeneratorPage }
+page AiImageGeneratorPage {
+  authRequired: true,
+  component: import AiImageGeneratorPage from "@src/extensions/ai-image-generator/AiImageGeneratorPage"
+}
+
+query getAdminSettings {
+  fn: import { getAdminSettings } from "@src/extensions/operations",
+  entities: [Setting]
+}
+
+action upsertSetting {
+  fn: import { upsertSetting } from "@src/extensions/operations",
+  entities: [Setting]
+}
+
+query getUserExtensions {
+  fn: import { getUserExtensions } from "@src/extensions/operations",
+  entities: [UserExtension]
+}
+
+action toggleExtension {
+  fn: import { toggleExtension } from "@src/extensions/operations",
+  entities: [UserExtension, Setting]
+}
+
+query getExtensionPrices {
+  fn: import { getExtensionPrices } from "@src/extensions/operations",
+  entities: [Setting]
+}
+
+action purchaseExtension {
+  fn: import { purchaseExtension } from "@src/extensions/operations",
+  entities: [UserExtension, Setting, User]
+}
+
+action generateImage {
+  fn: import { generateImage } from "@src/extensions/ai-image-generator/operations",
+  entities: [User, UserExtension, Setting, GeneratedImage]
+}
+
+action checkImageStatus {
+  fn: import { checkImageStatus } from "@src/extensions/ai-image-generator/operations",
+  entities: [GeneratedImage, Setting]
+}
+
+query getUserImages {
+  fn: import { getUserImages } from "@src/extensions/ai-image-generator/operations",
+  entities: [GeneratedImage]
+}
+
+action deleteImage {
+  fn: import { deleteImage } from "@src/extensions/ai-image-generator/operations",
+  entities: [GeneratedImage]
+}
+//#endregion
+
+//#region Social Connect
+route SocialConnectRoute { path: "/social-connect", to: SocialConnectPage }
+page SocialConnectPage {
+  authRequired: true,
+  component: import SocialConnectPage from "@src/social-connect/SocialConnectPage"
+}
+
+route AdminSocialConnectRoute { path: "/admin/social-connect", to: AdminSocialConnectPage }
+page AdminSocialConnectPage {
+  authRequired: true,
+  component: import AdminSocialConnectPage from "@src/social-connect/admin/AdminSocialConnectPage"
+}
+
+action saveSystemSocialApp {
+  fn: import { saveSystemSocialApp } from "@src/social-connect/operations",
+  entities: [User, Setting]
+}
+
+query getSystemSocialApps {
+  fn: import { getSystemSocialApps } from "@src/social-connect/operations",
+  entities: [Setting]
+}
+
+action saveSocialAppCredential {
+  fn: import { saveSocialAppCredential } from "@src/social-connect/operations",
+  entities: [User, SocialAppCredential]
+}
+
+action deleteSocialAppCredential {
+  fn: import { deleteSocialAppCredential } from "@src/social-connect/operations",
+  entities: [User, SocialAppCredential, SocialAccount]
+}
+
+query getSocialAppCredentials {
+  fn: import { getSocialAppCredentials } from "@src/social-connect/operations",
+  entities: [SocialAppCredential]
+}
+
+query getSocialAccounts {
+  fn: import { getSocialAccounts } from "@src/social-connect/operations",
+  entities: [SocialAccount]
+}
+
+query getSocialAccountsByPlatform {
+  fn: import { getSocialAccountsByPlatform } from "@src/social-connect/operations",
+  entities: [SocialAccount]
+}
+
+action disconnectSocialAccount {
+  fn: import { disconnectSocialAccount } from "@src/social-connect/operations",
+  entities: [SocialAccount]
+}
+
+action initiateSocialOAuth {
+  fn: import { initiateSocialOAuth } from "@src/social-connect/operations",
+  entities: [User, SocialAppCredential, OAuthState, Setting]
+}
+
+api socialOAuthCallback {
+  fn: import { socialOAuthCallback } from "@src/social-connect/callback",
+  entities: [OAuthState, SocialAppCredential, SocialAccount, Setting],
+  httpRoute: (GET, "/api/social-connect/callback/:platform"),
+  auth: false
+}
+//#endregion
+
+//#region Chatbot
+route ChatbotRoute { path: "/chatbot", to: ChatbotPage }
+page ChatbotPage {
+  authRequired: true,
+  component: import ChatbotPage from "@src/chatbot/ChatbotPage"
+}
+
+query getChatbots {
+  fn: import { getChatbots } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData, ChatbotChannel]
+}
+
+query getChatbot {
+  fn: import { getChatbot } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData, ChatbotChannel]
+}
+
+action createChatbot {
+  fn: import { createChatbot } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotChannel]
+}
+
+action updateChatbot {
+  fn: import { updateChatbot } from "@src/chatbot/operations",
+  entities: [Chatbot]
+}
+
+action deleteChatbot {
+  fn: import { deleteChatbot } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData, ChatbotChannel]
+}
+
+action addChatbotData {
+  fn: import { addChatbotData } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData]
+}
+
+action deleteChatbotData {
+  fn: import { deleteChatbotData } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData]
+}
+
+action trainChatbot {
+  fn: import { trainChatbot } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData]
+}
+
+api chatbotUploadPdf {
+  fn: import { chatbotUploadPdf } from "@src/chatbot/pdfUpload",
+  entities: [Chatbot, ChatbotData],
+  httpRoute: (POST, "/api/chatbot/upload-pdf"),
+  middlewareConfigFn: import { chatbotUploadMiddleware } from "@src/chatbot/pdfUpload"
+}
+
+action saveChatbotChannel {
+  fn: import { saveChatbotChannel } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotChannel]
+}
+
+action deleteChatbotChannel {
+  fn: import { deleteChatbotChannel } from "@src/chatbot/operations",
+  entities: [ChatbotChannel]
+}
+
+action saveChannelCredentials {
+  fn: import { saveChannelCredentials } from "@src/chatbot/operations",
+  entities: [ChatbotChannel]
+}
+
+action chatWithBot {
+  fn: import { chatWithBot } from "@src/chatbot/operations",
+  entities: [Chatbot, ChatbotData, Setting, User, CreditTransaction]
+}
+//#endregion
+
+//#region Brand Voice
+route BrandVoiceRoute { path: "/brand-voice", to: BrandVoicePage }
+page BrandVoicePage {
+  authRequired: true,
+  component: import BrandVoicePage from "@src/brand-voice/BrandVoicePage"
+}
+
+route BrandVoiceCreateRoute { path: "/brand-voice/create", to: BrandVoiceFormPage }
+page BrandVoiceFormPage {
+  authRequired: true,
+  component: import BrandVoiceFormPage from "@src/brand-voice/BrandVoiceFormPage"
+}
+
+route BrandVoiceEditRoute { path: "/brand-voice/:id/edit", to: BrandVoiceEditPage }
+page BrandVoiceEditPage {
+  authRequired: true,
+  component: import BrandVoiceFormPage from "@src/brand-voice/BrandVoiceFormPage"
+}
+
+query getCompanies {
+  fn: import { getCompanies } from "@src/brand-voice/operations",
+  entities: [Company, Product]
+}
+
+query getCompany {
+  fn: import { getCompany } from "@src/brand-voice/operations",
+  entities: [Company, Product]
+}
+
+action createCompany {
+  fn: import { createCompany } from "@src/brand-voice/operations",
+  entities: [Company, Product]
+}
+
+action updateCompany {
+  fn: import { updateCompany } from "@src/brand-voice/operations",
+  entities: [Company, Product]
+}
+
+action deleteCompany {
+  fn: import { deleteCompany } from "@src/brand-voice/operations",
+  entities: [Company, Product]
+}
+//#endregion
+
+//#region Social Media Agent Extension
+route SocialMediaAgentRoute { path: "/extensions/social-media-agent", to: SocialMediaAgentPage }
+page SocialMediaAgentPage {
+  authRequired: true,
+  component: import SocialMediaAgentPage from "@src/extensions/social-media-agent/SocialMediaAgentPage"
+}
+
+route SocialMediaAgentCreateRoute { path: "/extensions/social-media-agent/create", to: SocialMediaAgentFormPage }
+page SocialMediaAgentFormPage {
+  authRequired: true,
+  component: import SocialMediaAgentFormPage from "@src/extensions/social-media-agent/SocialMediaAgentFormPage"
+}
+
+route SocialMediaAgentEditRoute { path: "/extensions/social-media-agent/:id/edit", to: SocialMediaAgentEditPage }
+page SocialMediaAgentEditPage {
+  authRequired: true,
+  component: import SocialMediaAgentFormPage from "@src/extensions/social-media-agent/SocialMediaAgentFormPage"
+}
+
+route SocialMediaAgentDetailRoute { path: "/extensions/social-media-agent/:id", to: SocialMediaAgentDetailPage }
+page SocialMediaAgentDetailPage {
+  authRequired: true,
+  component: import SocialMediaAgentDetailPage from "@src/extensions/social-media-agent/SocialMediaAgentDetailPage"
+}
+
+// Agent CRUD
+query getSocialMediaAgents {
+  fn: import { getSocialMediaAgents } from "@src/extensions/social-media-agent/operations",
+  entities: [SocialMediaAgent, UserExtension]
+}
+
+query getSocialMediaAgent {
+  fn: import { getSocialMediaAgent } from "@src/extensions/social-media-agent/operations",
+  entities: [SocialMediaAgent, SocialMediaAgentPost, UserExtension]
+}
+
+action createSocialMediaAgent {
+  fn: import { createSocialMediaAgent } from "@src/extensions/social-media-agent/operations",
+  entities: [SocialMediaAgent, UserExtension, Company]
+}
+
+action updateSocialMediaAgent {
+  fn: import { updateSocialMediaAgent } from "@src/extensions/social-media-agent/operations",
+  entities: [SocialMediaAgent, UserExtension]
+}
+
+action deleteSocialMediaAgent {
+  fn: import { deleteSocialMediaAgent } from "@src/extensions/social-media-agent/operations",
+  entities: [SocialMediaAgent, UserExtension]
+}
+
+// Post CRUD
+query getSocialMediaPosts {
+  fn: import { getSocialMediaPosts } from "@src/extensions/social-media-agent/postOperations",
+  entities: [SocialMediaAgentPost, UserExtension]
+}
+
+query getSocialMediaPost {
+  fn: import { getSocialMediaPost } from "@src/extensions/social-media-agent/postOperations",
+  entities: [SocialMediaAgentPost, PostRevision, PostMedia, UserExtension]
+}
+
+action createSocialMediaPost {
+  fn: import { createSocialMediaPost } from "@src/extensions/social-media-agent/postOperations",
+  entities: [SocialMediaAgentPost, SocialMediaAgent, PostRevision, UserExtension, SocialAccount]
+}
+
+action updateSocialMediaPost {
+  fn: import { updateSocialMediaPost } from "@src/extensions/social-media-agent/postOperations",
+  entities: [SocialMediaAgentPost, PostRevision, UserExtension, SocialAccount]
+}
+
+action deleteSocialMediaPost {
+  fn: import { deleteSocialMediaPost } from "@src/extensions/social-media-agent/postOperations",
+  entities: [SocialMediaAgentPost, UserExtension]
+}
+
+// AI Generation
+action generateSocialMediaPost {
+  fn: import { generateSocialMediaPost } from "@src/extensions/social-media-agent/aiGeneration",
+  entities: [SocialMediaAgent, SocialMediaAgentPost, PostRevision, UserExtension, Setting, Company, Product, User, CreditTransaction]
+}
+
+action generateSocialBatchPosts {
+  fn: import { generateSocialBatchPosts } from "@src/extensions/social-media-agent/aiGeneration",
+  entities: [SocialMediaAgent, SocialMediaAgentPost, PostRevision, UserExtension, Setting, Company, Product, User, CreditTransaction]
+}
+//#endregion
+
+//#region SEO Agent Extension
+route SeoAgentRoute { path: "/extensions/seo-agent", to: SeoAgentPage }
+page SeoAgentPage {
+  authRequired: true,
+  component: import SeoAgentPage from "@src/extensions/seo-agent/SeoAgentPage"
+}
+
+route SeoAgentCreateRoute { path: "/extensions/seo-agent/create", to: SeoAgentFormPage }
+page SeoAgentFormPage {
+  authRequired: true,
+  component: import SeoAgentFormPage from "@src/extensions/seo-agent/SeoAgentFormPage"
+}
+
+route SeoAgentEditRoute { path: "/extensions/seo-agent/:id/edit", to: SeoAgentEditPage }
+page SeoAgentEditPage {
+  authRequired: true,
+  component: import SeoAgentFormPage from "@src/extensions/seo-agent/SeoAgentFormPage"
+}
+
+route SeoAgentDetailRoute { path: "/extensions/seo-agent/:id", to: SeoAgentDetailPage }
+page SeoAgentDetailPage {
+  authRequired: true,
+  component: import SeoAgentDetailPage from "@src/extensions/seo-agent/SeoAgentDetailPage"
+}
+
+// Agent CRUD
+query getSeoAgents {
+  fn: import { getSeoAgents } from "@src/extensions/seo-agent/operations",
+  entities: [SeoAgent, UserExtension]
+}
+
+query getSeoAgent {
+  fn: import { getSeoAgent } from "@src/extensions/seo-agent/operations",
+  entities: [SeoAgent, SeoAgentPost, SeoAgentKeyword, SeoAgentCluster, UserExtension]
+}
+
+action createSeoAgent {
+  fn: import { createSeoAgent } from "@src/extensions/seo-agent/operations",
+  entities: [SeoAgent, UserExtension, Company]
+}
+
+action updateSeoAgent {
+  fn: import { updateSeoAgent } from "@src/extensions/seo-agent/operations",
+  entities: [SeoAgent, UserExtension]
+}
+
+action deleteSeoAgent {
+  fn: import { deleteSeoAgent } from "@src/extensions/seo-agent/operations",
+  entities: [SeoAgent, UserExtension]
+}
+
+// Post CRUD
+query getSeoPosts {
+  fn: import { getSeoPosts } from "@src/extensions/seo-agent/postOperations",
+  entities: [SeoAgentPost, UserExtension]
+}
+
+query getSeoPost {
+  fn: import { getSeoPost } from "@src/extensions/seo-agent/postOperations",
+  entities: [SeoAgentPost, PostRevision, PostMedia, UserExtension]
+}
+
+action createSeoPost {
+  fn: import { createSeoPost } from "@src/extensions/seo-agent/postOperations",
+  entities: [SeoAgentPost, SeoAgent, PostRevision, UserExtension]
+}
+
+action updateSeoPost {
+  fn: import { updateSeoPost } from "@src/extensions/seo-agent/postOperations",
+  entities: [SeoAgentPost, PostRevision, UserExtension]
+}
+
+action deleteSeoPost {
+  fn: import { deleteSeoPost } from "@src/extensions/seo-agent/postOperations",
+  entities: [SeoAgentPost, UserExtension]
+}
+
+// AI Generation
+action generateSeoPost {
+  fn: import { generateSeoPost } from "@src/extensions/seo-agent/aiGeneration",
+  entities: [SeoAgent, SeoAgentPost, PostRevision, UserExtension, Setting, Company, Product, User, CreditTransaction]
+}
+
+action generateSeoBatchPosts {
+  fn: import { generateSeoBatchPosts } from "@src/extensions/seo-agent/aiGeneration",
+  entities: [SeoAgent, SeoAgentPost, PostRevision, UserExtension, Setting, Company, Product, SeoAgentKeyword, User, CreditTransaction]
+}
+
+// Keyword Research
+action researchKeywords {
+  fn: import { researchKeywords } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [SeoAgent, SeoAgentKeyword, UserExtension, Setting, User, CreditTransaction]
+}
+
+query getSeoKeywords {
+  fn: import { getSeoKeywords } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [SeoAgentKeyword, UserExtension]
+}
+
+action deleteSeoKeyword {
+  fn: import { deleteSeoKeyword } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [SeoAgentKeyword, UserExtension]
+}
+//#endregion
+
+//#region Post Hub (Shared)
+route PostHubRoute { path: "/post-hub", to: PostHubPage }
+page PostHubPage {
+  authRequired: true,
+  component: import PostHubPage from "@src/extensions/shared/PostHubPage"
+}
+
+// Unified queries
+query getAllPosts {
+  fn: import { getAllPosts } from "@src/extensions/shared/postHubOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, SocialMediaAgent, SeoAgent, UserExtension, SocialAccount]
+}
+
+// Approval workflow
+action approvePost {
+  fn: import { approvePost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action rejectPost {
+  fn: import { rejectPost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action reworkPost {
+  fn: import { reworkPost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, SocialMediaAgent, SeoAgent, PostRevision, UserExtension, Setting, Company, Product, User, CreditTransaction]
+}
+
+action schedulePost {
+  fn: import { schedulePost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action reschedulePost {
+  fn: import { reschedulePost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action movePost {
+  fn: import { movePost } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+query getPostRevisions {
+  fn: import { getPostRevisions } from "@src/extensions/shared/approvalOperations",
+  entities: [PostRevision, UserExtension, SocialMediaAgentPost, SeoAgentPost]
+}
+
+action restoreRevision {
+  fn: import { restoreRevision } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+// Publishing
+action publishPostNow {
+  fn: import { publishPostNow } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, SocialMediaAgent, SeoAgent, PostRevision, UserExtension, SocialAccount, Setting]
+}
+
+action crossPostToSocial {
+  fn: import { crossPostToSocial } from "@src/extensions/shared/approvalOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, SocialMediaAgent, SeoAgent, PostRevision, UserExtension]
+}
+
+// Publishing job
+job publishScheduledPosts {
+  executor: PgBoss,
+  perform: {
+    fn: import { publishScheduledPosts } from "@src/extensions/shared/publishingJob"
+  },
+  schedule: {
+    cron: "*/5 * * * *"
+  },
+  entities: [SocialMediaAgentPost, SeoAgentPost, SocialMediaAgent, SeoAgent, PostRevision, SocialAccount, Setting]
+}
+//#endregion
+
+//#region Content Calendar
+route ContentCalendarRoute { path: "/content-calendar", to: ContentCalendarPage }
+page ContentCalendarPage {
+  authRequired: true,
+  component: import ContentCalendarPage from "@src/extensions/shared/CalendarPage"
+}
+//#endregion
+
+//#region SEO Scoring + Clustering + Briefs
+action clusterKeywords {
+  fn: import { clusterKeywords } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [SeoAgent, SeoAgentKeyword, SeoAgentCluster, UserExtension, Setting, User, CreditTransaction]
+}
+
+query getSeoAgentClusters {
+  fn: import { getSeoAgentClusters } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [SeoAgentCluster, UserExtension]
+}
+
+action generateContentBrief {
+  fn: import { generateContentBrief } from "@src/extensions/seo-agent/briefOperations",
+  entities: [SeoAgent, SeoAgentCluster, SeoAgentContentBrief, UserExtension, Setting, User, CreditTransaction]
+}
+
+action generateArticleFromBrief {
+  fn: import { generateArticleFromBrief } from "@src/extensions/seo-agent/briefOperations",
+  entities: [SeoAgent, SeoAgentPost, SeoAgentContentBrief, PostRevision, UserExtension, Setting, Company, Product, User, CreditTransaction]
+}
+
+query getContentBriefs {
+  fn: import { getContentBriefs } from "@src/extensions/seo-agent/briefOperations",
+  entities: [SeoAgentContentBrief, UserExtension]
+}
+//#endregion
+
+//#region Media Management
+action uploadPostMedia {
+  fn: import { uploadPostMedia } from "@src/extensions/shared/mediaOperations",
+  entities: [PostMedia, SocialMediaAgentPost, SeoAgentPost, UserExtension]
+}
+
+action generatePostImage {
+  fn: import { generatePostImage } from "@src/extensions/shared/mediaOperations",
+  entities: [PostMedia, SocialMediaAgentPost, SeoAgentPost, UserExtension, Setting, User, CreditTransaction]
+}
+
+action deletePostMedia {
+  fn: import { deletePostMedia } from "@src/extensions/shared/mediaOperations",
+  entities: [PostMedia, UserExtension]
+}
+
+action reorderPostMedia {
+  fn: import { reorderPostMedia } from "@src/extensions/shared/mediaOperations",
+  entities: [PostMedia, UserExtension]
+}
+//#endregion
+
+//#region Bulk Operations
+action bulkApprove {
+  fn: import { bulkApprove } from "@src/extensions/shared/bulkOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action bulkSchedule {
+  fn: import { bulkSchedule } from "@src/extensions/shared/bulkOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, PostRevision, UserExtension]
+}
+
+action bulkDelete {
+  fn: import { bulkDelete } from "@src/extensions/shared/bulkOperations",
+  entities: [SocialMediaAgentPost, SeoAgentPost, UserExtension]
+}
+//#endregion
+
+//#region Contact Form Messages
+// TODO:
+// add functionality to allow users to send messages to admin
+// and make them accessible via the admin dashboard
+route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }
+page AdminMessagesPage {
+  authRequired: true,
+  component: import AdminMessages from "@src/admin/dashboards/messages/MessagesPage"
+}
+//#endregion
+
+//#region Central Inbox Extension
+route InboxRoute { path: "/inbox", to: InboxPage }
+page InboxPage {
+  authRequired: true,
+  component: import InboxPage from "@src/extensions/central-inbox/pages/InboxPage"
+}
+
+route InboxSettingsRoute { path: "/inbox/settings", to: InboxSettingsPage }
+page InboxSettingsPage {
+  authRequired: true,
+  component: import InboxSettingsPage from "@src/extensions/central-inbox/pages/InboxSettingsPage"
+}
+
+route InboxContactsRoute { path: "/inbox/contacts", to: InboxContactsPage }
+page InboxContactsPage {
+  authRequired: true,
+  component: import ContactsPage from "@src/extensions/central-inbox/pages/ContactsPage"
+}
+
+// Queries
+query getConversations {
+  fn: import { getConversations } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, InboxContact, UserExtension]
+}
+
+query getConversation {
+  fn: import { getConversation } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, InboxContact, InboxNote, UserExtension]
+}
+
+query getConversationMessages {
+  fn: import { getConversationMessages } from "@src/extensions/central-inbox/operations",
+  entities: [InboxMessage, InboxConversation, UserExtension]
+}
+
+query getInboxContacts {
+  fn: import { getInboxContacts } from "@src/extensions/central-inbox/contactOperations",
+  entities: [InboxContact, InboxConversation, UserExtension]
+}
+
+query getCannedResponses {
+  fn: import { getCannedResponses } from "@src/extensions/central-inbox/cannedResponseOperations",
+  entities: [InboxCannedResponse, UserExtension]
+}
+
+query getInboxStats {
+  fn: import { getInboxStats } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, UserExtension]
+}
+
+query getInboxAgents {
+  fn: import { getInboxAgents } from "@src/extensions/central-inbox/operations",
+  entities: [User]
+}
+
+query getInboxChannels {
+  fn: import { getInboxChannels } from "@src/extensions/central-inbox/operations",
+  entities: [Chatbot, ChatbotChannel]
+}
+
+// Actions
+action sendInboxMessage {
+  fn: import { sendInboxMessage } from "@src/extensions/central-inbox/operations",
+  entities: [InboxMessage, InboxConversation, InboxContact, UserExtension]
+}
+
+action takeOverConversation {
+  fn: import { takeOverConversation } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, UserExtension]
+}
+
+action returnToAi {
+  fn: import { returnToAi } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, UserExtension]
+}
+
+action assignConversation {
+  fn: import { assignConversation } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, UserExtension]
+}
+
+action updateConversationStatus {
+  fn: import { updateConversationStatus } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, InboxMessage, UserExtension]
+}
+
+action toggleConversationStar {
+  fn: import { toggleConversationStar } from "@src/extensions/central-inbox/operations",
+  entities: [InboxConversation, UserExtension]
+}
+
+action updateInboxContact {
+  fn: import { updateInboxContact } from "@src/extensions/central-inbox/contactOperations",
+  entities: [InboxContact, UserExtension]
+}
+
+action addContactTag {
+  fn: import { addContactTag } from "@src/extensions/central-inbox/contactOperations",
+  entities: [InboxContact, UserExtension]
+}
+
+action removeContactTag {
+  fn: import { removeContactTag } from "@src/extensions/central-inbox/contactOperations",
+  entities: [InboxContact, UserExtension]
+}
+
+action addInboxNote {
+  fn: import { addInboxNote } from "@src/extensions/central-inbox/operations",
+  entities: [InboxNote, InboxConversation, UserExtension]
+}
+
+action saveCannedResponse {
+  fn: import { saveCannedResponse } from "@src/extensions/central-inbox/cannedResponseOperations",
+  entities: [InboxCannedResponse, UserExtension]
+}
+
+action deleteCannedResponse {
+  fn: import { deleteCannedResponse } from "@src/extensions/central-inbox/cannedResponseOperations",
+  entities: [InboxCannedResponse, UserExtension]
+}
+
+// Webhook APIs (no auth — external platforms call these)
+api inboxWebhookWhatsapp {
+  fn: import { whatsappWebhook } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction],
+  middlewareConfigFn: import { inboxWebhookMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (POST, "/api/inbox/webhook/whatsapp"),
+  auth: false
+}
+
+api inboxWebhookTelegram {
+  fn: import { telegramWebhook } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction],
+  middlewareConfigFn: import { inboxWebhookMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (POST, "/api/inbox/webhook/telegram"),
+  auth: false
+}
+
+api inboxWebhookMessenger {
+  fn: import { messengerWebhook } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction],
+  middlewareConfigFn: import { inboxWebhookMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (POST, "/api/inbox/webhook/messenger"),
+  auth: false
+}
+
+api inboxWebhookInstagram {
+  fn: import { instagramWebhook } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction],
+  middlewareConfigFn: import { inboxWebhookMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (POST, "/api/inbox/webhook/instagram"),
+  auth: false
+}
+
+api inboxWidgetMessage {
+  fn: import { widgetMessage } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction],
+  middlewareConfigFn: import { widgetCorsMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (POST, "/api/inbox/widget/message"),
+  auth: false
+}
+
+api inboxWidgetMessages {
+  fn: import { widgetMessages } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [InboxConversation, InboxMessage, InboxContact],
+  middlewareConfigFn: import { widgetCorsMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (GET, "/api/inbox/widget/messages"),
+  auth: false
+}
+
+api inboxWidgetConfig {
+  fn: import { widgetConfig } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [Chatbot],
+  middlewareConfigFn: import { widgetCorsMiddleware } from "@src/extensions/central-inbox/webhookRoutes",
+  httpRoute: (GET, "/api/inbox/widget/config"),
+  auth: false
+}
+
+// WhatsApp/Messenger GET verification endpoints
+api inboxVerifyWhatsapp {
+  fn: import { whatsappVerify } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [Setting],
+  httpRoute: (GET, "/api/inbox/webhook/whatsapp"),
+  auth: false
+}
+
+api inboxVerifyMessenger {
+  fn: import { messengerVerify } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [Setting],
+  httpRoute: (GET, "/api/inbox/webhook/messenger"),
+  auth: false
+}
+
+api inboxVerifyInstagram {
+  fn: import { instagramVerify } from "@src/extensions/central-inbox/webhookRoutes",
+  entities: [Setting],
+  httpRoute: (GET, "/api/inbox/webhook/instagram"),
+  auth: false
+}
+
+// AI reply job
+job inboxAiReply {
+  executor: PgBoss,
+  perform: {
+    fn: import { inboxAiReplyJob } from "@src/extensions/central-inbox/aiResponseJob"
+  },
+  entities: [InboxConversation, InboxMessage, InboxContact, Chatbot, ChatbotData, Setting, User, CreditTransaction]
+}
+//#endregion

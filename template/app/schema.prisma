@@ -1,0 +1,674 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  email                     String?         @unique
+  username                  String?         @unique
+  isAdmin                   Boolean         @default(false)
+
+  fullName                  String?
+  phone                     String?
+  bio                       String?
+  avatarUrl                 String?
+  company                   String?
+
+  paymentProcessorUserId    String?         @unique
+  lemonSqueezyCustomerPortalUrl String?     // You can delete this if you're not using Lemon Squeezy as your payments processor.
+  subscriptionStatus        String?         // 'active', 'cancel_at_period_end', 'past_due', 'deleted'
+  subscriptionPlan          String?         // 'hobby', 'pro'
+  datePaid                  DateTime?
+  planCredits               Int             @default(0)
+  topUpCredits              Int             @default(0)
+  trialCredits              Int             @default(100)
+  creditResetDate           DateTime?
+
+  creditTransactions        CreditTransaction[]
+  contactFormMessages       ContactFormMessage[]
+  files                     File[]
+  userExtensions            UserExtension[]
+  generatedImages           GeneratedImage[]
+  socialAppCredentials      SocialAppCredential[]
+  socialAccounts            SocialAccount[]
+  companies                 Company[]
+  products                  Product[]
+  chatbots                  Chatbot[]
+  chatbotData               ChatbotData[]
+  chatbotChannels           ChatbotChannel[]
+
+  socialMediaAgents         SocialMediaAgent[]
+  socialMediaAgentPosts     SocialMediaAgentPost[]
+  seoAgents                 SeoAgent[]
+  seoAgentPosts             SeoAgentPost[]
+  seoAgentKeywords          SeoAgentKeyword[]
+  seoAgentClusters          SeoAgentCluster[]
+  seoAgentContentBriefs     SeoAgentContentBrief[]
+  postRevisions             PostRevision[]
+  postMedia                 PostMedia[]
+  blogPosts                 BlogPost[]
+  helpArticles              HelpArticle[]
+
+  inboxConversations        InboxConversation[]
+  inboxContacts             InboxContact[]
+  inboxCannedResponses      InboxCannedResponse[]
+}
+
+
+model File {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  name                      String
+  type                      String
+  s3Key                     String
+}
+
+model DailyStats {
+  id                               Int             @id @default(autoincrement())
+  date                             DateTime        @default(now()) @unique
+
+  totalViews                       Int             @default(0)
+  prevDayViewsChangePercent        String          @default("0")
+  userCount                        Int             @default(0)
+  paidUserCount                    Int             @default(0)
+  userDelta                        Int             @default(0)
+  paidUserDelta                    Int             @default(0)
+  totalRevenue                     Float           @default(0)
+  totalProfit                      Float           @default(0)
+
+  sources                          PageViewSource[]
+}
+
+model PageViewSource {
+  @@id([date, name])
+  name                     String
+  date                     DateTime        @default(now())
+
+  dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])
+  dailyStatsId             Int?
+
+  visitors                 Int
+}
+
+model Logs {
+  id                       Int             @id @default(autoincrement())
+  createdAt                DateTime        @default(now())
+
+  message                  String
+  level                    String
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  key       String   @unique
+  value     String
+}
+
+model UserExtension {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  extensionId String
+  isActive    Boolean   @default(true)
+  purchasedAt DateTime?
+
+  @@unique([userId, extensionId])
+}
+
+model GeneratedImage {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  prompt    String
+  modelName String
+  width     Int
+  height    Int
+  status    String   @default("pending")
+  taskId    String?
+  imageUrl  String?
+  errorMsg  String?
+}
+
+model SocialAppCredential {
+  id            String          @id @default(uuid())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id])
+  userId        String
+  platform      String          // facebook | instagram | linkedin | x | tiktok | youtube
+  clientId      String
+  clientSecret  String          // encrypted with AES-256-GCM
+  redirectUri   String
+  accounts      SocialAccount[]
+
+  @@unique([userId, platform])
+}
+
+model SocialAccount {
+  id               String               @id @default(uuid())
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  user             User                 @relation(fields: [userId], references: [id])
+  userId           String
+  credential       SocialAppCredential? @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  credentialId     String?              // null = connected via system app
+  platform         String
+  platformUserId   String
+  platformUsername String?
+  displayName      String?
+  profileImageUrl  String?
+  accessToken      String               // encrypted
+  refreshToken     String?              // encrypted
+  tokenExpiresAt   DateTime?
+  scopes           String?              // comma-separated
+  isActive         Boolean              @default(true)
+  useSystemApp     Boolean              @default(false)
+  posts            SocialMediaAgentPost[]
+
+  @@unique([userId, platform, platformUserId])
+}
+
+model OAuthState {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  userId       String
+  platform     String
+  state        String   @unique
+  codeVerifier String?  // for PKCE (X, TikTok)
+  useSystemApp Boolean  @default(false)
+  expiresAt    DateTime
+}
+
+model ContactFormMessage {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  content                   String
+  isRead                    Boolean         @default(false)
+  repliedAt                 DateTime?
+}
+
+model Company {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  name                String
+  industry            String?   // comma-separated
+  description         String
+  targetAudience      String?
+  website             String?
+  tagline             String?
+  toneOfVoice         String?   // Professional, Casual, Funny, etc.
+  brandColor          String?   // hex color
+  specificInstructions String?  // custom writing rules
+  products            Product[]
+  socialMediaAgents   SocialMediaAgent[]
+  seoAgents           SeoAgent[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  name        String
+  type        Int      @default(0) // 0=Product, 1=Service, 2=Other
+  keyFeatures String?
+}
+
+model Chatbot {
+  id             String        @id @default(uuid())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id])
+  userId         String
+  title          String        @default("Untitled Chatbot")
+  bubbleMessage  String?
+  welcomeMessage String?
+  instructions   String?
+  dontGoBeyond   Boolean       @default(false)
+  language       String?
+  avatar         String?
+  color          String        @default("#017BE5")
+  position       String        @default("right")
+  showLogo       Boolean       @default(true)
+  showDateTime   Boolean       @default(true)
+  isEmailCollect Boolean       @default(true)
+  isContact      Boolean       @default(true)
+  isAttachment   Boolean       @default(true)
+  isEmoji        Boolean       @default(true)
+  embedWidth     Int           @default(420)
+  embedHeight    Int           @default(745)
+  isActive       Boolean       @default(true)
+  status         String        @default("not-trained")
+  data           ChatbotData[]
+  channels       ChatbotChannel[]
+  inboxConversations InboxConversation[]
+}
+
+model ChatbotData {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbotId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String
+  typeValue String?
+  content   String?
+  path      String?
+  status    String   @default("waiting")
+}
+
+model ChatbotChannel {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  chatbot        Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbotId      String
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
+  channel        String   // "website" | "messenger" | "whatsapp" | "telegram"
+  isActive       Boolean  @default(true)
+  isConfigured   Boolean  @default(false)
+
+  // Website-specific
+  embedWidth     Int?
+  embedHeight    Int?
+
+  // Messenger-specific
+  fbAppId        String?
+  fbAppSecret    String?  // encrypted
+  fbPageName     String?
+  fbAccessToken  String?  // encrypted
+  fbVerifyToken  String?
+
+  // WhatsApp-specific
+  waPhoneNumberId String?
+  waBusinessId    String?
+  waAccessToken   String?  // encrypted
+  waVerifyToken   String?
+
+  // Telegram-specific
+  tgBotToken     String?  // encrypted
+  tgBotUsername   String?
+
+  @@unique([chatbotId, channel])
+}
+
+// ---------------------------------------------------------------------------
+// Social Media Agent
+// ---------------------------------------------------------------------------
+
+model SocialMediaAgent {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  company             Company?  @relation(fields: [companyId], references: [id])
+  companyId           String?
+  name                String
+  platforms           Json      @default("[]")       // ["facebook","instagram","linkedin","x"]
+  siteUrl             String?
+  siteDescription     String?
+  targetAudience      String?
+  postTypes           Json      @default("[]")       // ["promotional","educational","engagement"]
+  tone                String?
+  ctaTemplates        Json      @default("[]")       // ["Learn more at...","Sign up today"]
+  categories          Json      @default("[]")
+  goals               Json      @default("[]")
+  brandingDescription String?
+  creativityLevel     Int       @default(5)          // 1-10
+  hashtagCount        Int       @default(5)
+  scheduleDays        Json      @default("[]")       // ["monday","wednesday","friday"]
+  scheduleTimes       Json      @default("[]")       // ["09:00","14:00"]
+  dailyPostCount      Int       @default(1)
+  publishingType      String    @default("manual")   // manual | auto
+  status              String    @default("active")   // active | paused
+  posts               SocialMediaAgentPost[]
+}
+
+model SocialMediaAgentPost {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  agent           SocialMediaAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId         String
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  content         String
+  hashtags        String?
+  platform        String                              // facebook | instagram | linkedin | x
+  status          String    @default("draft")         // draft | approved | scheduled | published | failed
+  imageUrl        String?
+  videoUrl        String?
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  approvedAt      DateTime?
+  externalPostId  String?
+  errorMessage    String?
+  aiMetadata      Json?                               // model, tokens, prompt snapshot
+  socialAccount   SocialAccount? @relation(fields: [socialAccountId], references: [id])
+  socialAccountId String?
+  revisions       PostRevision[]
+  media           PostMedia[]
+}
+
+// ---------------------------------------------------------------------------
+// SEO Agent
+// ---------------------------------------------------------------------------
+
+model SeoAgent {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  company             Company?  @relation(fields: [companyId], references: [id])
+  companyId           String?
+  name                String
+  seedKeywords        Json      @default("[]")
+  siteUrl             String?
+  niche               String?
+  aiProvider          String    @default("openai")
+  targetWordCount     Int       @default(1500)
+  contentTypes        Json      @default("[]")       // ["internal_blog","external_blog","social"]
+  tone                String?
+  language            String    @default("en")
+  scheduleDays        Json      @default("[]")
+  dailyContentCount   Int       @default(1)
+  wpUrl               String?
+  wpUsername          String?
+  wpPassword          String?                         // encrypted with AES-256-GCM
+  wpCategoryId        String?
+  status              String    @default("active")   // active | paused
+  posts               SeoAgentPost[]
+  keywords            SeoAgentKeyword[]
+  clusters            SeoAgentCluster[]
+  contentBriefs       SeoAgentContentBrief[]
+}
+
+model SeoAgentPost {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  agent               SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId             String
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  contentType         String    @default("internal_blog") // internal_blog | external_blog | social
+  title               String
+  content             String                             // HTML article body
+  metaDescription     String?
+  slug                String?
+  primaryKeyword      String?
+  secondaryKeywords   Json      @default("[]")
+  seoScore            Int?
+  aeoScore            Int?
+  faqSchema           Json?                              // structured FAQ data
+  status              String    @default("draft")        // draft | approved | scheduled | published | failed
+  scheduledAt         DateTime?
+  publishedAt         DateTime?
+  approvedAt          DateTime?
+  wpPostId            String?
+  externalPostUrl     String?
+  socialMediaPostId   String?
+  errorMessage        String?
+  aiMetadata          Json?
+  revisions           PostRevision[]
+  media               PostMedia[]
+}
+
+model SeoAgentKeyword {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  agent               SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId             String
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  keyword             String
+  searchVolume        Int?
+  keywordDifficulty   Int?
+  cpc                 Float?
+  intent              String?                            // informational | navigational | commercial | transactional
+  opportunityScore    Int?
+  source              String    @default("spyfu")        // spyfu | manual
+}
+
+model SeoAgentCluster {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  agent           SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId         String
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  name            String
+  keywords        Json      @default("[]")
+  intent          String?
+  contentBriefs   SeoAgentContentBrief[]
+}
+
+model SeoAgentContentBrief {
+  id                  String    @id @default(uuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  agent               SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId             String
+  cluster             SeoAgentCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  clusterId           String?
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  outline             Json      @default("[]")
+  targetKeywords      Json      @default("[]")
+  questionsToAnswer   Json      @default("[]")
+  targetWordCount     Int       @default(1500)
+  linksToInclude      Json      @default("[]")
+}
+
+// ---------------------------------------------------------------------------
+// Shared: Post Revisions + Media
+// ---------------------------------------------------------------------------
+
+model PostRevision {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  postType        String                              // seo | social
+  socialPost      SocialMediaAgentPost? @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  socialPostId    String?
+  seoPost         SeoAgentPost? @relation(fields: [seoPostId], references: [id], onDelete: Cascade)
+  seoPostId       String?
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  action          String                              // created | approved | rejected | reworked | scheduled | published | restored
+  statusFrom      String?
+  statusTo        String?
+  snapshot        Json?                               // full post data at time of revision
+  changedFields   Json?
+  notes           String?
+}
+
+model PostMedia {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  postType        String                              // seo | social
+  socialPost      SocialMediaAgentPost? @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  socialPostId    String?
+  seoPost         SeoAgentPost? @relation(fields: [seoPostId], references: [id], onDelete: Cascade)
+  seoPostId       String?
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  type            String                              // image | video
+  source          String    @default("uploaded")      // uploaded | ai_generated
+  filePath        String?
+  fileUrl         String?
+  aiPrompt        String?
+  aiStatus        String?
+  aiModel         String?
+  sortOrder       Int       @default(0)
+}
+
+model BlogPost {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  author         User     @relation(fields: [authorId], references: [id])
+  authorId       String
+  title          String
+  slug           String   @unique
+  excerpt        String?
+  content        String
+  coverImageUrl  String?
+  status         String   @default("draft") // draft | scheduled | published | archived
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+}
+
+model HelpArticle {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  author         User     @relation(fields: [authorId], references: [id])
+  authorId       String
+  title          String
+  slug           String   @unique
+  excerpt        String?
+  content        String
+  coverImageUrl  String?
+  category       String   @default("General")
+  status         String   @default("draft") // draft | scheduled | published | archived
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+}
+
+// ---------------------------------------------------------------------------
+// Credit System
+// ---------------------------------------------------------------------------
+
+model CreditTransaction {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  amount       Int                          // positive = credit, negative = debit
+  balanceAfter Int                          // total balance snapshot
+  type         String                       // plan_refresh | top_up | deduction | refund | trial_grant
+  actionType   String?                      // social_post | seo_article | ai_image | chatbot_message | etc.
+  description  String?
+  metadata     Json?
+}
+
+// ---------------------------------------------------------------------------
+// Central Inbox
+// ---------------------------------------------------------------------------
+
+model InboxConversation {
+  id                 String    @id @default(uuid())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id])
+  userId             String
+  chatbot            Chatbot?  @relation(fields: [chatbotId], references: [id])
+  chatbotId          String?
+  channel            String                      // website|whatsapp|telegram|messenger|instagram
+  status             String    @default("open")  // open|pending|resolved|closed
+  priority           String    @default("normal") // low|normal|high|urgent
+  assignedTo         String?                      // userId of human agent (null = unassigned)
+  handlerMode        String    @default("ai")    // ai|human|queued
+  handoffReason      String?                      // why AI handed off
+  contactId          String?
+  contact            InboxContact? @relation(fields: [contactId], references: [id])
+  subject            String?
+  lastMessageAt      DateTime?
+  lastMessagePreview String?
+  unreadCount        Int       @default(0)
+  isStarred          Boolean   @default(false)
+  tags               Json      @default("[]")
+  metadata           Json?                        // channel-specific data
+  messages           InboxMessage[]
+  notes              InboxNote[]
+}
+
+model InboxMessage {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  conversation    InboxConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId  String
+  senderType      String                    // contact|ai|agent|system
+  senderId        String?                   // userId for agent, null for contact/ai
+  senderName      String?
+  content         String
+  contentType     String    @default("text") // text|image|file|audio|sticker
+  attachments     Json      @default("[]")   // [{url, name, type, size}]
+  metadata        Json?                       // channel-specific (delivery receipt, etc.)
+  isInternal      Boolean   @default(false)  // internal note visible only to agents
+  status          String    @default("sent") // sending|sent|delivered|read|failed
+}
+
+model InboxContact {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  name            String?
+  email           String?
+  phone           String?
+  avatarUrl       String?
+  channel         String?                    // primary channel
+  channelUserId   String?                    // platform-specific user ID
+  tags            Json      @default("[]")
+  notes           String?
+  customFields    Json      @default("{}")
+  lastSeenAt      DateTime?
+  conversations   InboxConversation[]
+  @@unique([userId, channel, channelUserId])
+}
+
+model InboxNote {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  conversation    InboxConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId  String
+  authorId        String
+  content         String
+}
+
+model InboxCannedResponse {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  shortcut        String    // e.g. "/greeting"
+  title           String
+  content         String
+  category        String?
+}

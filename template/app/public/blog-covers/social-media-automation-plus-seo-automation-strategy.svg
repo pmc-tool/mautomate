@@ -1,0 +1,18 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Social Media Automation and SEO Automation Strategy">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#052e16"/>
+      <stop offset="55%" stop-color="#15803d"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g3)"/>
+  <path d="M0 660 C 260 560, 420 760, 760 670 C 980 610, 1280 760, 1600 620 L1600 900 L0 900 Z" fill="#ffffff" fill-opacity="0.12"/>
+  <rect x="110" y="150" width="540" height="12" rx="6" fill="#bbf7d0"/>
+  <text x="110" y="265" fill="#dcfce7" font-family="Satoshi, Arial, sans-serif" font-size="40" font-weight="700">Social and SEO</text>
+  <text x="110" y="345" fill="#ffffff" font-family="Satoshi, Arial, sans-serif" font-size="70" font-weight="800">Unified Growth Strategy</text>
+  <text x="110" y="430" fill="#d1fae5" font-family="Satoshi, Arial, sans-serif" font-size="30">Connect content, distribution, and attribution</text>
+  <circle cx="1320" cy="220" r="150" fill="#ffffff" fill-opacity="0.08"/>
+  <circle cx="1220" cy="360" r="90" fill="#ffffff" fill-opacity="0.08"/>
+  <text x="110" y="785" fill="#ecfdf5" font-family="Satoshi, Arial, sans-serif" font-size="30" font-weight="600">mAutomate.ai</text>
+</svg>

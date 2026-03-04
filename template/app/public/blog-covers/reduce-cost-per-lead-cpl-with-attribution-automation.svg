@@ -1,0 +1,17 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reduce Cost Per Lead with Attribution Automation">
+  <defs>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3f0f1d"/>
+      <stop offset="50%" stop-color="#be123c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g4)"/>
+  <rect x="980" y="140" width="430" height="600" rx="24" fill="#ffffff" fill-opacity="0.1"/>
+  <polyline points="1040,610 1130,520 1210,560 1300,430 1370,470" fill="none" stroke="#fee2e2" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="1300" cy="430" r="16" fill="#ffffff"/>
+  <text x="120" y="250" fill="#ffe4e6" font-family="Satoshi, Arial, sans-serif" font-size="40" font-weight="700">Attribution and Automation</text>
+  <text x="120" y="335" fill="#ffffff" font-family="Satoshi, Arial, sans-serif" font-size="68" font-weight="800">Reduce Cost Per Lead</text>
+  <text x="120" y="420" fill="#ffe4e6" font-family="Satoshi, Arial, sans-serif" font-size="30">Improve CPL without lowering lead quality</text>
+  <text x="120" y="770" fill="#fff1f2" font-family="Satoshi, Arial, sans-serif" font-size="30" font-weight="600">mAutomate.ai</text>
+</svg>
