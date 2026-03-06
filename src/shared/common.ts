@@ -1,2 +1,2 @@
-export const DocsUrl = "https://mautomate.ai/docs";
+export const DocsUrl = "/docs";
 export const BlogUrl = "/blog";

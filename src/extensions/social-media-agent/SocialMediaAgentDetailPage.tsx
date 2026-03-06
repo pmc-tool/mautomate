@@ -14,9 +14,7 @@ import {
   ArrowLeft,
   Pencil,
   Trash2,
-  Share2,
   Loader2,
-  Eye,
   Sparkles,
   Calendar,
   Hash,
@@ -24,8 +22,14 @@ import {
   Zap,
   Plus,
   Layers,
+  BarChart3,
+  Clock,
+  Target,
+  Globe,
+  Eye,
 } from "lucide-react";
 import { Button } from "../../client/components/ui/button";
+import { Badge } from "../../client/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -50,21 +54,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../client/components/ui/select";
-import { Separator } from "../../client/components/ui/separator";
 import { toast } from "../../client/hooks/use-toast";
 import UserDashboardLayout from "../../user-dashboard/layout/UserDashboardLayout";
 
+import avatarImg from "../../client/static/social-agent/avatar.png";
+
+// Platform icons
+import facebookIcon from "../../social-connect/icons/facebook.svg";
+import instagramIcon from "../../social-connect/icons/instagram.svg";
+import linkedinIcon from "../../social-connect/icons/linkedin.svg";
+import xIcon from "../../social-connect/icons/x.svg";
+
+const PLATFORM_ICON_MAP: Record<string, string> = {
+  facebook: facebookIcon,
+  instagram: instagramIcon,
+  linkedin: linkedinIcon,
+  x: xIcon,
+};
+
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  paused: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  paused: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 const POST_STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  scheduled: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-  published: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  scheduled: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  published: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
   failed: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+};
+
+const PLATFORM_LABELS: Record<string, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  x: "X",
 };
 
 export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser }) {
@@ -83,13 +108,9 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  // AI generation state
   const [generating, setGenerating] = useState(false);
   const [batchCount, setBatchCount] = useState(3);
   const [generatingBatch, setGeneratingBatch] = useState(false);
-
-  // Create post dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostPlatform, setNewPostPlatform] = useState<"facebook" | "instagram" | "linkedin" | "x">("facebook");
@@ -176,7 +197,7 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
         <div className="text-center py-20">
           <p className="text-muted-foreground">Agent not found.</p>
           <Link to="/extensions/social-media-agent">
-            <Button variant="outline" className="mt-4">
+            <Button variant="outline" className="mt-4 rounded-xl">
               <ArrowLeft className="h-4 w-4 mr-1.5" />
               Back to Agents
             </Button>
@@ -186,26 +207,38 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
     );
   }
 
+  const draftCount = posts?.filter((p: any) => p.status === "draft").length ?? 0;
+  const publishedCount = posts?.filter((p: any) => p.status === "published").length ?? 0;
+  const scheduledCount = posts?.filter((p: any) => p.status === "scheduled").length ?? 0;
+
   return (
     <UserDashboardLayout user={user}>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/extensions/social-media-agent">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
+        {/* Header with Agent Info */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild className="rounded-xl">
+              <Link to="/extensions/social-media-agent">
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            {/* Agent Avatar */}
+            <div className="relative">
+              <div className="h-14 w-14 overflow-hidden rounded-full bg-[#bd711d]/10">
+                <img src={avatarImg} alt={agent.name} className="h-full w-full object-cover" />
+              </div>
+              <span
+                className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-background ${
+                  agent.status === "active" ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+              />
+            </div>
             <div>
-              <h1 className="text-foreground text-2xl font-bold flex items-center gap-2">
-                <Share2 className="h-6 w-6 text-primary" />
-                {agent.name}
-              </h1>
+              <h1 className="text-foreground text-2xl font-bold">{agent.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[agent.status] ?? "bg-muted text-muted-foreground"}`}>
+                <Badge className={`text-[10px] ${STATUS_COLORS[agent.status] ?? "bg-muted text-muted-foreground"}`}>
                   {agent.status}
-                </span>
+                </Badge>
                 {agent.company && (
                   <span className="text-xs text-muted-foreground">
                     Brand: {agent.company.name}
@@ -214,106 +247,134 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
               </div>
             </div>
           </div>
-          <Link to={`/extensions/social-media-agent/${agent.id}/edit`}>
-            <Button variant="outline">
+          <Button variant="outline" asChild className="rounded-xl">
+            <Link to={`/extensions/social-media-agent/${agent.id}/edit`}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Edit Agent
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{agent.platforms?.length ?? 0}</div>
-              <p className="text-xs text-muted-foreground">Platforms</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{posts?.length ?? agent.posts?.length ?? 0}</div>
-              <p className="text-xs text-muted-foreground">Posts</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold capitalize">{agent.publishingType ?? "manual"}</div>
-              <p className="text-xs text-muted-foreground">Publishing</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{agent.dailyPostCount ?? 1}</div>
-              <p className="text-xs text-muted-foreground">Daily Posts</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#bd711d]/10">
+              <Globe className="h-5 w-5 text-[#bd711d]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{agent.platforms?.length ?? 0}</p>
+              <p className="text-[11px] text-muted-foreground">Platforms</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
+              <BarChart3 className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{posts?.length ?? agent.posts?.length ?? 0}</p>
+              <p className="text-[11px] text-muted-foreground">Posts</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
+              <Clock className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold capitalize">{agent.publishingType ?? "manual"}</p>
+              <p className="text-[11px] text-muted-foreground">Publishing</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+              <Target className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{agent.dailyPostCount ?? 1}</p>
+              <p className="text-[11px] text-muted-foreground">Daily Posts</p>
+            </div>
+          </div>
         </div>
 
         {/* Config Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="border-b px-5 py-3">
+            <h3 className="text-sm font-semibold">Configuration</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               {agent.tone && (
-                <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Tone:</span>
-                  <span className="font-medium">{agent.tone}</span>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/30">
+                    <Palette className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Tone</p>
+                    <p className="text-sm font-medium">{agent.tone}</p>
+                  </div>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Creativity:</span>
-                <span className="font-medium">{agent.creativityLevel ?? 5}/10</span>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Creativity</p>
+                  <p className="text-sm font-medium">{agent.creativityLevel ?? 5}/10</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Hashtags:</span>
-                <span className="font-medium">{agent.hashtagCount ?? 5}</span>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Hash className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Hashtags</p>
+                  <p className="text-sm font-medium">{agent.hashtagCount ?? 5}</p>
+                </div>
               </div>
               {agent.scheduleDays && agent.scheduleDays.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Schedule:</span>
-                  <span className="font-medium">
-                    {agent.scheduleDays
-                      .map((d: string) => d.charAt(0).toUpperCase() + d.slice(1, 3))
-                      .join(", ")}
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                    <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Schedule</p>
+                    <p className="text-sm font-medium">
+                      {agent.scheduleDays
+                        .map((d: string) => d.charAt(0).toUpperCase() + d.slice(1, 3))
+                        .join(", ")}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Platforms */}
             {agent.platforms && agent.platforms.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Platforms</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {agent.platforms.map((p: string) => (
-                      <span
-                        key={p}
-                        className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
-                      >
-                        {p.charAt(0).toUpperCase() + p.slice(1)}
-                      </span>
-                    ))}
-                  </div>
+              <div className="pt-3 border-t">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Platforms</p>
+                <div className="flex flex-wrap gap-2">
+                  {agent.platforms.map((p: string) => (
+                    <span
+                      key={p}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium bg-muted"
+                    >
+                      <img src={PLATFORM_ICON_MAP[p]} alt={p} className="h-4 w-4 object-contain" />
+                      {PLATFORM_LABELS[p] ?? p}
+                    </span>
+                  ))}
                 </div>
-              </>
+              </div>
             )}
 
+            {/* Post Types */}
             {agent.postTypes && agent.postTypes.length > 0 && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Post Types</p>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="pt-3 border-t">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Post Types</p>
+                <div className="flex flex-wrap gap-2">
                   {agent.postTypes.map((t: string) => (
                     <span
                       key={t}
-                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium"
+                      className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground font-medium"
                     >
                       {t
                         .split("_")
@@ -324,113 +385,121 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Posts Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Posts</CardTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Create Post
-                </Button>
-                <div className="flex items-center gap-1 border rounded-md pl-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={batchCount}
-                    onChange={(e) => setBatchCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                    className="w-14 h-8 border-0 p-1 text-center text-sm"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGenerateBatch}
-                    disabled={generatingBatch}
-                    className="h-8"
-                  >
-                    {generatingBatch ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
-                    Batch
-                  </Button>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleGeneratePost} disabled={generating}>
-                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Zap className="h-3.5 w-3.5 mr-1" />}
-                  Generate Post
-                </Button>
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold">Posts</h3>
+              <div className="flex gap-1.5">
+                {draftCount > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">{draftCount} drafts</Badge>
+                )}
+                {scheduledCount > 0 && (
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px]">{scheduledCount} scheduled</Badge>
+                )}
+                {publishedCount > 0 && (
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px]">{publishedCount} published</Badge>
+                )}
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(true)} className="rounded-xl h-8">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Create
+              </Button>
+              <div className="flex items-center gap-1 border rounded-xl overflow-hidden">
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={batchCount}
+                  onChange={(e) => setBatchCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                  className="w-12 h-8 border-0 p-1 text-center text-sm rounded-none"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGenerateBatch}
+                  disabled={generatingBatch}
+                  className="h-8 rounded-none border-l"
+                >
+                  {generatingBatch ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
+                  Batch
+                </Button>
+              </div>
+              <Button size="sm" onClick={handleGeneratePost} disabled={generating} className="rounded-xl h-8">
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Zap className="h-3.5 w-3.5 mr-1" />}
+                Generate
+              </Button>
+            </div>
+          </div>
+          <div className="p-4">
             {loadingPosts ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : !posts || posts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                No posts yet. Generate your first post using the button above.
+              <div className="text-center py-12">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted mx-auto mb-3">
+                  <Sparkles className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground mb-1">No posts yet</p>
+                <p className="text-muted-foreground text-xs">
+                  Generate your first post using the buttons above
+                </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-2 font-medium text-muted-foreground">Content</th>
-                      <th className="pb-2 font-medium text-muted-foreground">Platform</th>
-                      <th className="pb-2 font-medium text-muted-foreground">Status</th>
-                      <th className="pb-2 font-medium text-muted-foreground">Created</th>
-                      <th className="pb-2 font-medium text-muted-foreground text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {posts.map((post: any) => (
-                      <tr key={post.id} className="border-b last:border-0 group">
-                        <td className="py-3 pr-4 max-w-xs">
-                          <p className="truncate">
-                            {post.content?.length > 80
-                              ? post.content.slice(0, 80) + "..."
-                              : post.content}
-                          </p>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                            {post.platform?.charAt(0).toUpperCase() + post.platform?.slice(1)}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${POST_STATUS_COLORS[post.status] ?? "bg-muted text-muted-foreground"}`}>
-                            {post.status}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4 text-muted-foreground">
+              <div className="space-y-2">
+                {posts.map((post: any) => (
+                  <div
+                    key={post.id}
+                    className="group flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors hover:bg-muted/30"
+                  >
+                    {/* Platform icon */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <img src={PLATFORM_ICON_MAP[post.platform]} alt={post.platform} className="h-5 w-5 object-contain" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm truncate">
+                        {post.content?.length > 100
+                          ? post.content.slice(0, 100) + "..."
+                          : post.content}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={`text-[10px] ${POST_STATUS_COLORS[post.status] ?? "bg-muted text-muted-foreground"}`}>
+                          {post.status}
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground">
                           {new Date(post.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 text-right">
-                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => setDeleteTarget({ id: post.id })}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteTarget({ id: post.id })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Delete post confirmation dialog */}
+      {/* Delete post dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
@@ -469,12 +538,13 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 rows={4}
+                className="rounded-xl resize-none"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="post-platform">Platform</Label>
               <Select value={newPostPlatform} onValueChange={(v) => setNewPostPlatform(v as typeof newPostPlatform)}>
-                <SelectTrigger id="post-platform">
+                <SelectTrigger id="post-platform" className="rounded-xl">
                   <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
                 <SelectContent>
@@ -492,14 +562,15 @@ export default function SocialMediaAgentDetailPage({ user }: { user: AuthUser })
                 placeholder="#marketing #ai #socialmedia"
                 value={newPostHashtags}
                 onChange={(e) => setNewPostHashtags(e.target.value)}
+                className="rounded-xl"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creatingPost}>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creatingPost} className="rounded-xl">
               Cancel
             </Button>
-            <Button onClick={handleCreatePost} disabled={creatingPost}>
+            <Button onClick={handleCreatePost} disabled={creatingPost} className="rounded-xl">
               {creatingPost && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
               Create Post
             </Button>

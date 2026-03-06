@@ -39,7 +39,7 @@ app mAutomate {
       email: {
         fromField: {
           name: "mAutomate",
-          email: "me@example.com"
+          email: "noreply@mautomate.ai"
         },
         emailVerification: {
           clientRoute: EmailVerificationRoute,
@@ -1372,4 +1372,207 @@ job videoStatusCheck {
   },
   entities: [VideoGeneration, Setting, User, CreditTransaction]
 }
+//#endregion
+
+// ---------------------------------------------------------------------------
+//#region Affiliate System
+// ---------------------------------------------------------------------------
+
+// Routes & Pages
+route AffiliateDashboardRoute { path: "/affiliate", to: AffiliateDashboardPage }
+page AffiliateDashboardPage { authRequired: true, component: import AffiliateDashboardPage from "@src/affiliate/AffiliateDashboardPage" }
+
+route AffiliateLinksRoute { path: "/affiliate/links", to: AffiliateLinksPage }
+page AffiliateLinksPage { authRequired: true, component: import AffiliateLinksPage from "@src/affiliate/AffiliateLinksPage" }
+
+route AffiliateEarningsRoute { path: "/affiliate/earnings", to: AffiliateEarningsPage }
+page AffiliateEarningsPage { authRequired: true, component: import AffiliateEarningsPage from "@src/affiliate/AffiliateEarningsPage" }
+
+route AffiliateWithdrawRoute { path: "/affiliate/withdraw", to: AffiliateWithdrawPage }
+page AffiliateWithdrawPage { authRequired: true, component: import AffiliateWithdrawPage from "@src/affiliate/AffiliateWithdrawPage" }
+
+route AdminAffiliateRoute { path: "/admin/affiliate", to: AdminAffiliatePage }
+page AdminAffiliatePage { authRequired: true, component: import AdminAffiliatePage from "@src/admin/dashboards/affiliate/AdminAffiliatePage" }
+
+route AdminAffiliateWithdrawalsRoute { path: "/admin/affiliate/withdrawals", to: AdminAffiliateWithdrawalsPage }
+page AdminAffiliateWithdrawalsPage { authRequired: true, component: import AdminAffiliateWithdrawalsPage from "@src/admin/dashboards/affiliate/AdminAffiliateWithdrawalsPage" }
+
+// Queries
+query getAffiliateStats {
+  fn: import { getAffiliateStats } from "@src/affiliate/operations",
+  entities: [User, AffiliateLink, AffiliateClick, AffiliateConversion, AffiliateCommission, AffiliateWithdrawal]
+}
+
+query getAffiliateLink {
+  fn: import { getAffiliateLink } from "@src/affiliate/operations",
+  entities: [AffiliateLink, AffiliateClick, AffiliateConversion]
+}
+
+query getAffiliateCommissions {
+  fn: import { getAffiliateCommissions } from "@src/affiliate/operations",
+  entities: [AffiliateCommission, AffiliateLink]
+}
+
+query getAffiliateWithdrawals {
+  fn: import { getAffiliateWithdrawals } from "@src/affiliate/operations",
+  entities: [AffiliateWithdrawal]
+}
+
+query getAdminAffiliateOverview {
+  fn: import { getAdminAffiliateOverview } from "@src/affiliate/adminOperations",
+  entities: [User, AffiliateLink, AffiliateClick, AffiliateConversion, AffiliateCommission, AffiliateWithdrawal, Setting]
+}
+
+query getAdminWithdrawalRequests {
+  fn: import { getAdminWithdrawalRequests } from "@src/affiliate/adminOperations",
+  entities: [AffiliateWithdrawal, User]
+}
+
+// Actions
+action createAffiliateLink {
+  fn: import { createAffiliateLink } from "@src/affiliate/operations",
+  entities: [AffiliateLink, User]
+}
+
+action updateAffiliateLink {
+  fn: import { updateAffiliateLink } from "@src/affiliate/operations",
+  entities: [AffiliateLink]
+}
+
+action claimReferral {
+  fn: import { claimReferral } from "@src/affiliate/operations",
+  entities: [User, AffiliateLink, AffiliateConversion]
+}
+
+action requestWithdrawal {
+  fn: import { requestWithdrawal } from "@src/affiliate/operations",
+  entities: [AffiliateWithdrawal, AffiliateCommission, User]
+}
+
+action processWithdrawal {
+  fn: import { processWithdrawal } from "@src/affiliate/adminOperations",
+  entities: [AffiliateWithdrawal, AffiliateCommission, Setting]
+}
+
+action updateAffiliateSettings {
+  fn: import { updateAffiliateSettings } from "@src/affiliate/adminOperations",
+  entities: [Setting]
+}
+
+action rejectWithdrawal {
+  fn: import { rejectWithdrawal } from "@src/affiliate/adminOperations",
+  entities: [AffiliateWithdrawal]
+}
+
+// Public API for click tracking
+api affiliateTrackClick {
+  fn: import { affiliateTrackClick } from "@src/affiliate/trackingApi",
+  entities: [AffiliateLink, AffiliateClick],
+  httpRoute: (GET, "/api/affiliate/track/:code"),
+  auth: false
+}
+
+//#endregion
+
+//#region Documentation Module
+
+route DocsRoute { path: "/docs", to: DocsPage }
+page DocsPage {
+  component: import DocsPage from "@src/docs/DocsPage"
+}
+
+route DocsCategoryRoute { path: "/docs/:categorySlug", to: DocsCategoryPage }
+page DocsCategoryPage {
+  component: import DocsCategoryPage from "@src/docs/DocsCategoryPage"
+}
+
+route DocsPageRoute { path: "/docs/:categorySlug/:pageSlug", to: DocsPageDetailPage }
+page DocsPageDetailPage {
+  component: import DocsPageDetailPage from "@src/docs/DocsPageDetailPage"
+}
+
+route AdminDocsRoute { path: "/admin/docs", to: AdminDocsPage }
+page AdminDocsPage {
+  authRequired: true,
+  component: import AdminDocsPage from "@src/admin/dashboards/docs/AdminDocsPage"
+}
+
+route AdminDocsCategoriesRoute { path: "/admin/docs/categories", to: AdminDocsCategoriesPage }
+page AdminDocsCategoriesPage {
+  authRequired: true,
+  component: import AdminDocsCategoriesPage from "@src/admin/dashboards/docs/AdminDocsCategoriesPage"
+}
+
+route AdminDocsNewRoute { path: "/admin/docs/new", to: AdminDocsFormPage }
+page AdminDocsFormPage {
+  authRequired: true,
+  component: import AdminDocsFormPage from "@src/admin/dashboards/docs/AdminDocsFormPage"
+}
+
+route AdminDocsEditRoute { path: "/admin/docs/:id/edit", to: AdminDocsEditPage }
+page AdminDocsEditPage {
+  authRequired: true,
+  component: import AdminDocsFormPage from "@src/admin/dashboards/docs/AdminDocsFormPage"
+}
+
+query getPublishedDocCategories {
+  fn: import { getPublishedDocCategories } from "@src/docs/operations",
+  entities: [DocCategory, DocPage]
+}
+
+query getDocPagesByCategory {
+  fn: import { getDocPagesByCategory } from "@src/docs/operations",
+  entities: [DocCategory, DocPage]
+}
+
+query getDocPageBySlug {
+  fn: import { getDocPageBySlug } from "@src/docs/operations",
+  entities: [DocCategory, DocPage, User]
+}
+
+query getAdminDocPages {
+  fn: import { getAdminDocPages } from "@src/docs/operations",
+  entities: [DocPage, DocCategory, User]
+}
+
+query getAdminDocPageById {
+  fn: import { getAdminDocPageById } from "@src/docs/operations",
+  entities: [DocPage, DocCategory]
+}
+
+query getAdminDocCategories {
+  fn: import { getAdminDocCategories } from "@src/docs/operations",
+  entities: [DocCategory, DocPage]
+}
+
+action createDocPage {
+  fn: import { createDocPage } from "@src/docs/operations",
+  entities: [DocPage, DocCategory, User]
+}
+
+action updateDocPage {
+  fn: import { updateDocPage } from "@src/docs/operations",
+  entities: [DocPage, DocCategory]
+}
+
+action deleteDocPage {
+  fn: import { deleteDocPage } from "@src/docs/operations",
+  entities: [DocPage]
+}
+
+action createDocCategory {
+  fn: import { createDocCategory } from "@src/docs/operations",
+  entities: [DocCategory]
+}
+
+action updateDocCategory {
+  fn: import { updateDocCategory } from "@src/docs/operations",
+  entities: [DocCategory]
+}
+
+action deleteDocCategory {
+  fn: import { deleteDocCategory } from "@src/docs/operations",
+  entities: [DocCategory, DocPage]
+}
+
 //#endregion

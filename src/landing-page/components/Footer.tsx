@@ -1,3 +1,5 @@
+import footerLogo from "../../client/static/logo.png";
+
 interface NavigationItem {
   name: string;
   href: string;
@@ -7,72 +9,131 @@ export default function Footer({
   footerNavigation,
 }: {
   footerNavigation: {
-    app: NavigationItem[];
-    company: NavigationItem[];
+    links: NavigationItem[];
+    integrations: NavigationItem[];
   };
 }) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="dark:bg-boxdark-2 mx-auto mt-6 max-w-7xl px-6 lg:px-8">
-      <footer
-        aria-labelledby="footer-heading"
-        className="relative border-t border-gray-900/10 py-24 sm:mt-32 dark:border-gray-200/10"
-      >
-        <h2 id="footer-heading" className="sr-only">
-          Footer
-        </h2>
-        <div className="mt-10 flex items-start justify-end gap-20">
-          <div className="mr-auto max-w-sm">
-            <p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-              mAutomate.ai
-            </p>
-            <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-300">
-              AI marketing automation platform for campaign orchestration,
-              audience segmentation, and attribution analytics.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-              App
-            </h3>
-            <ul role="list" className="mt-6 space-y-4">
-              {footerNavigation.app.map((item) => (
-                <li key={item.name}>
-                  <a
-                    href={item.href}
-                    className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
-                  >
-                    {item.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-              Company
-            </h3>
-            <ul role="list" className="mt-6 space-y-4">
-              {footerNavigation.company.map((item) => (
-                <li key={item.name}>
-                  <a
-                    href={item.href}
-                    className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
-                  >
-                    {item.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
+    <footer className="bg-[#f8f4f1] dark:bg-card">
+      <div className="mx-auto max-w-[1280px] px-4 pb-[20px] pt-0 sm:px-6 md:px-8 lg:px-[95px]">
+        {/* Main content area with bottom border */}
+        <div className="border-b border-[rgba(10,15,20,0.08)] pb-[20px] pt-[60px] sm:pt-[80px] md:pt-[100px] lg:pt-[132px] dark:border-border">
+          <div className="flex flex-col gap-10 md:flex-row md:justify-between md:gap-8">
+            {/* Left: Link columns */}
+            <div className="flex gap-[40px] sm:gap-[60px] md:gap-[80px] lg:gap-[163px]">
+              {/* Links column */}
+              <div>
+                <h3 className="text-[12px] font-semibold uppercase tracking-[1.8px] text-[rgba(10,15,20,0.4)] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                  Links
+                </h3>
+                <ul className="mt-[24px] space-y-[12px] sm:mt-[36px] sm:space-y-[14px]">
+                  {footerNavigation.links.map((item) => (
+                    <li key={item.name}>
+                      <a
+                        href={item.href}
+                        className="text-[14px] font-medium leading-[22.5px] text-[#0a0f14] transition-colors hover:text-[#bd711d] sm:text-[15px] dark:text-foreground dark:hover:text-primary"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Integrations column */}
+              <div>
+                <h3 className="text-[12px] font-semibold uppercase tracking-[1.8px] text-[rgba(10,15,20,0.4)] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                  Integrations
+                </h3>
+                <ul className="mt-[24px] space-y-[12px] sm:mt-[36px] sm:space-y-[14px]">
+                  {footerNavigation.integrations.map((item) => (
+                    <li key={item.name}>
+                      <a
+                        href={item.href}
+                        className="text-[14px] font-medium leading-[22.5px] text-[#0a0f14] transition-colors hover:text-[#bd711d] sm:text-[15px] dark:text-foreground dark:hover:text-primary"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Right: CTA */}
+            <div className="max-w-[483px]">
+              <h3 className="text-[22px] font-semibold leading-[1.3] text-[#0a0f14] sm:text-[28px] sm:leading-[36.4px] dark:text-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                Smart Campaign Orchestrator
+              </h3>
+              <p className="mt-[12px] text-[14px] leading-[1.7] text-[rgba(10,15,20,0.55)] sm:text-[15px] sm:leading-[25.5px] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                AI marketing automation platform for campaign orchestration, audience segmentation, and attribution analytics.
+              </p>
+              <div className="mt-[24px] flex flex-col gap-[12px] sm:mt-[32px]">
+                <a
+                  href="mailto:contact@mautomate.ai"
+                  className="flex h-[48px] items-center justify-center rounded-[10px] border border-[#925716] bg-[#bd711d] px-[24px] py-[12px] text-[14px] font-semibold text-white shadow-[0px_16px_8px_0px_rgba(189,113,29,0.01),0px_12px_6px_0px_rgba(189,113,29,0.04),0px_4px_4px_0px_rgba(189,113,29,0.07),0px_1.5px_3px_0px_rgba(34,34,34,0.08)] transition-all hover:bg-[#a5631a] sm:h-[50.5px] sm:px-[32px] sm:text-[15px]"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Contact Us
+                </a>
+                <a
+                  href="#"
+                  className="flex h-[48px] items-center justify-center rounded-[8px] border border-[rgba(10,15,20,0.25)] text-[14px] font-semibold text-[#0a0f14] transition-colors hover:bg-black/5 sm:h-[52.5px] sm:text-[15px] dark:border-border dark:text-foreground"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Subscribe
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="mt-14 border-t border-gray-900/10 pt-8 dark:border-gray-200/10">
-          <p className="text-sm leading-6 text-gray-600 dark:text-gray-300">
-            © {currentYear} mAutomate.ai. All rights reserved.
+
+        {/* Watermark area: big logo with top fade */}
+        <div className="relative mt-[20px] h-[120px] sm:h-[160px] lg:h-[220px]">
+          {/* Top fade-out gradient overlay — light mode */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[80px] sm:h-[105px] dark:hidden"
+            style={{ background: "linear-gradient(to bottom, #f8f4f1 0%, transparent 100%)" }}
+          />
+          {/* Top fade-out gradient overlay — dark mode */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-[80px] bg-gradient-to-b from-card to-transparent sm:h-[105px] dark:block"
+          />
+          {/* Big logo as watermark — full width, centered */}
+          <img
+            src={footerLogo}
+            alt="mAutomate"
+            className="absolute bottom-0 left-1/2 z-0 h-auto w-[90%] max-w-[900px] -translate-x-1/2 object-contain opacity-30 sm:w-[85%] dark:opacity-10"
+          />
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-[16px] flex flex-col items-center gap-3 sm:mt-[20px] sm:flex-row sm:justify-between sm:gap-0">
+          <p className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] sm:text-[15px] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            {currentYear} mAutomate.ai. All rights reserved.
           </p>
+          <div className="flex gap-[16px] sm:gap-[27px]">
+            <a
+              href="https://mautomate.ai/terms"
+              className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Terms of Service
+            </a>
+            <a
+              href="https://mautomate.ai/privacy"
+              className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Privacy Policy
+            </a>
+          </div>
         </div>
-      </footer>
-    </div>
+      </div>
+    </footer>
   );
 }

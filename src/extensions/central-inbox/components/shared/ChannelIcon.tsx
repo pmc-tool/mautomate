@@ -1,27 +1,16 @@
-import {
-  Globe,
-  MessageCircle,
-  MessageSquare,
-  Send,
-  Instagram,
-  type LucideIcon,
-} from "lucide-react";
+import { Globe } from "lucide-react";
 import { cn } from "../../../../client/utils";
 
-const CHANNEL_ICONS: Record<string, LucideIcon> = {
-  website: Globe,
-  whatsapp: MessageCircle,
-  telegram: Send,
-  messenger: MessageSquare,
-  instagram: Instagram,
-};
+import messengerIcon from "../../../../social-connect/icons/messenger.svg";
+import whatsappIcon from "../../../../social-connect/icons/whatsapp.svg";
+import telegramIcon from "../../../../social-connect/icons/telegram.svg";
+import instagramIcon from "../../../../social-connect/icons/instagram.svg";
 
-const CHANNEL_COLORS: Record<string, string> = {
-  website: "text-blue-600",
-  whatsapp: "text-green-600",
-  telegram: "text-sky-600",
-  messenger: "text-purple-600",
-  instagram: "text-pink-600",
+const CHANNEL_IMGS: Record<string, string> = {
+  whatsapp: whatsappIcon,
+  telegram: telegramIcon,
+  messenger: messengerIcon,
+  instagram: instagramIcon,
 };
 
 interface ChannelIconProps {
@@ -31,8 +20,10 @@ interface ChannelIconProps {
 }
 
 export function ChannelIcon({ channel, size = 16, className }: ChannelIconProps) {
-  const Icon = CHANNEL_ICONS[channel] || Globe;
-  const color = CHANNEL_COLORS[channel] || "";
-
-  return <Icon size={size} className={cn(color, className)} />;
+  const imgSrc = CHANNEL_IMGS[channel];
+  if (imgSrc) {
+    return <img src={imgSrc} alt={channel} width={size} height={size} className={cn("object-contain", className)} />;
+  }
+  // Fallback: website + unknown channels
+  return <Globe size={size} className={cn("text-blue-600", className)} />;
 }

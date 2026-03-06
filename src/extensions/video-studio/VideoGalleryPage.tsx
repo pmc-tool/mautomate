@@ -9,7 +9,6 @@ import { VideoModal } from "./components/VideoModal";
 import { Button } from "../../client/components/ui/button";
 import { Card, CardContent } from "../../client/components/ui/card";
 import { Badge } from "../../client/components/ui/badge";
-import { Input } from "../../client/components/ui/input";
 import { Skeleton } from "../../client/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "../../client/components/ui/tabs";
 import {
@@ -24,11 +23,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Film,
+  Grid3X3,
   Plus,
-  Search,
   Wand2,
   X,
 } from "lucide-react";
+
+import videoCreateImg from "../../client/static/video-studio/video-create.png";
 
 const PAGE_SIZE = 20;
 
@@ -71,21 +72,24 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="rounded-xl">
               <Link to="/video-studio">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-md shadow-blue-500/20">
+              <Grid3X3 className="h-5 w-5 text-white" />
+            </div>
             <div>
               <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Video Gallery
               </h1>
-              <p className="text-muted-foreground text-sm">
-                {data?.total ?? 0} video{(data?.total ?? 0) !== 1 ? "s" : ""}
+              <p className="text-muted-foreground text-xs">
+                {data?.total ?? 0} video{(data?.total ?? 0) !== 1 ? "s" : ""} generated
               </p>
             </div>
           </div>
-          <Button asChild>
+          <Button asChild className="rounded-xl">
             <Link to="/video-studio/generate">
               <Wand2 className="mr-1.5 h-4 w-4" />
               Generate
@@ -94,7 +98,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
           {/* Type tabs */}
           <Tabs
             value={typeFilter}
@@ -103,7 +107,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
               setPage(1);
             }}
           >
-            <TabsList>
+            <TabsList className="bg-muted/50">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="ttv">Text to Video</TabsTrigger>
               <TabsTrigger value="itv">Image to Video</TabsTrigger>
@@ -120,7 +124,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40 rounded-xl">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -137,6 +141,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
             <Button
               variant="secondary"
               size="sm"
+              className="rounded-xl"
               onClick={() => {
                 searchParams.delete("projectId");
                 setSearchParams(searchParams);
@@ -152,7 +157,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i}>
+              <Card key={i} className="overflow-hidden rounded-xl">
                 <Skeleton className="aspect-video w-full" />
                 <CardContent className="space-y-2 p-3">
                   <Skeleton className="h-4 w-3/4" />
@@ -172,22 +177,27 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
             ))}
           </div>
         ) : (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="bg-muted mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-                <Film className="text-muted-foreground h-8 w-8" />
-              </div>
-              <p className="text-muted-foreground mb-4 text-sm">
-                No videos found
-              </p>
-              <Button asChild>
-                <Link to="/video-studio/generate">
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Generate Video
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-16">
+            <div className="mb-4">
+              <img
+                src={videoCreateImg}
+                alt="No videos"
+                className="h-28 w-auto object-contain opacity-60"
+              />
+            </div>
+            <p className="text-foreground mb-1 text-sm font-medium">
+              No videos found
+            </p>
+            <p className="text-muted-foreground mb-5 text-xs">
+              Try adjusting your filters or generate a new video
+            </p>
+            <Button asChild className="rounded-xl">
+              <Link to="/video-studio/generate">
+                <Plus className="mr-1.5 h-4 w-4" />
+                Generate Video
+              </Link>
+            </Button>
+          </div>
         )}
 
         {/* Pagination */}
@@ -196,6 +206,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
             <Button
               variant="outline"
               size="icon"
+              className="rounded-xl"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
@@ -216,7 +227,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
                       variant={p === page ? "default" : "outline"}
                       size="icon"
                       onClick={() => setPage(p)}
-                      className="h-9 w-9"
+                      className="h-9 w-9 rounded-xl"
                     >
                       {p}
                     </Button>
@@ -227,6 +238,7 @@ export default function VideoGalleryPage({ user }: { user: AuthUser }) {
             <Button
               variant="outline"
               size="icon"
+              className="rounded-xl"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >

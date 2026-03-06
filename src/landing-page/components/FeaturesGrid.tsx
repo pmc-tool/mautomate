@@ -1,154 +1,54 @@
-import React from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "../../client/components/ui/card";
-import { cn } from "../../client/utils";
-import { Feature } from "./Features";
-import SectionTitle from "./SectionTitle";
+import facebookIcon from "../../client/static/landing/platforms/facebook.png";
+import instagramIcon from "../../client/static/landing/platforms/instagram.png";
+import xIcon from "../../client/static/landing/platforms/x.png";
+import messengerIcon from "../../client/static/landing/platforms/messenger.png";
+import whatsappIcon from "../../client/static/landing/platforms/whatsapp.png";
+import linkedinIcon from "../../client/static/landing/platforms/linkedin.png";
+import youtubeIcon from "../../client/static/landing/platforms/youtube.png";
+import youtubeShortsIcon from "../../client/static/landing/platforms/youtube-shorts.png";
+import tiktokIcon from "../../client/static/landing/platforms/tiktok.png";
 
-export interface GridFeature extends Omit<Feature, "icon"> {
-  icon?: React.ReactNode;
-  emoji?: string;
-  direction?: "col" | "row" | "col-reverse" | "row-reverse";
-  align?: "center" | "left";
-  size: "small" | "medium" | "large";
-  fullWidthIcon?: boolean;
-}
+const platforms = [
+  { name: "Facebook", icon: facebookIcon, rounded: "rounded-[8px]" },
+  { name: "Instagram", icon: instagramIcon, rounded: "" },
+  { name: "x", icon: xIcon, rounded: "" },
+  { name: "Messenger", icon: messengerIcon, rounded: "" },
+  { name: "WhatsApp", icon: whatsappIcon, rounded: "rounded-full" },
+  { name: "Linkedin", icon: linkedinIcon, rounded: "" },
+  { name: "YouTube", icon: youtubeIcon, rounded: "" },
+  { name: "YouTube Shorts", icon: youtubeShortsIcon, rounded: "" },
+  { name: "TikTok", icon: tiktokIcon, rounded: "" },
+];
 
-interface FeaturesGridProps {
-  features: GridFeature[];
-  className?: string;
-}
-
-const FeaturesGrid = ({ features, className = "" }: FeaturesGridProps) => {
+export default function SocialConnections() {
   return (
-    <div
-      className="mx-auto my-16 flex max-w-7xl flex-col gap-4 md:my-24 lg:my-40"
-      id="features"
-    >
-      <SectionTitle
-        title="Features"
-        description="Everything your team needs to automate, optimize, and scale marketing."
-      />
-      <div
-        className={cn(
-          "mx-4 grid auto-rows-[minmax(140px,auto)] grid-cols-2 gap-4 md:mx-6 md:grid-cols-4 lg:mx-8 lg:grid-cols-6",
-          className,
-        )}
-      >
-        {features.map((feature) => (
-          <FeaturesGridItem
-            key={feature.name + feature.description}
-            {...feature}
-          />
+    <div className="mx-auto my-16 flex max-w-[1200px] flex-col items-center gap-[24px] px-4 sm:my-24 sm:gap-[32px] sm:px-6 md:my-32 lg:px-8" id="features">
+      <div className="flex flex-col items-center gap-[10px] text-center">
+        <h2 className="text-[26px] font-semibold leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[36px] md:text-[44px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+          Power Your Social Connections Automatically
+        </h2>
+        <p className="max-w-[686px] text-[14px] leading-[1.6] text-[#7c7f85] sm:text-[16px] dark:text-muted-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+          Automate social engagement, scheduling, messaging, and analytics to grow your audience across multiple platforms effortlessly and maximize marketing performance today.
+        </p>
+      </div>
+
+      <div className="flex w-full flex-wrap content-start items-start justify-center gap-[10px] rounded-[16px] bg-[#f8f4f1] p-[16px] sm:gap-[16px] sm:rounded-[22px] sm:p-[24px] dark:bg-card">
+        {platforms.map((platform) => (
+          <div
+            key={platform.name}
+            className="flex items-center gap-[8px] rounded-[10px] bg-white py-[8px] pl-[8px] pr-[14px] transition-all hover:shadow-md sm:gap-[12px] sm:rounded-[12px] sm:py-[12px] sm:pl-[12px] sm:pr-[20px] dark:bg-background"
+          >
+            <img
+              src={platform.icon}
+              alt={platform.name}
+              className={`h-[26px] w-[26px] object-cover sm:h-[34px] sm:w-[34px] ${platform.rounded}`}
+            />
+            <span className="whitespace-nowrap text-[15px] font-medium leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[18px] md:text-[22px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+              {platform.name}
+            </span>
+          </div>
         ))}
       </div>
     </div>
   );
-};
-
-function FeaturesGridItem({
-  name,
-  description,
-  icon,
-  emoji,
-  href,
-  direction = "col",
-  align = "center",
-  size = "medium",
-  fullWidthIcon = true,
-}: GridFeature) {
-  const gridFeatureSizeToClasses: Record<GridFeature["size"], string> = {
-    small: "col-span-1",
-    medium: "col-span-2 md:col-span-2 lg:col-span-2",
-    large: "col-span-2 md:col-span-2 lg:col-span-2 row-span-2",
-  };
-
-  const directionToClass: Record<
-    NonNullable<GridFeature["direction"]>,
-    string
-  > = {
-    col: "flex-col",
-    row: "flex-row",
-    "row-reverse": "flex-row-reverse",
-    "col-reverse": "flex-col-reverse",
-  };
-
-  const gridFeatureCard = (
-    <Card
-      className={cn(
-        "h-full min-h-[140px] cursor-pointer transition-all duration-300 hover:shadow-lg",
-        gridFeatureSizeToClasses[size],
-      )}
-      variant="bento"
-    >
-      <CardContent className="flex h-full flex-col items-center justify-center p-4">
-        {fullWidthIcon && (icon || emoji) ? (
-          <div className="mb-3 flex w-full items-center justify-center">
-            {icon ? (
-              icon
-            ) : emoji ? (
-              <span className="text-4xl">{emoji}</span>
-            ) : null}
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "flex items-center gap-3",
-              directionToClass[direction],
-              align === "center"
-                ? "items-center justify-center"
-                : "justify-start",
-            )}
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              {icon ? (
-                icon
-              ) : emoji ? (
-                <span className="text-2xl">{emoji}</span>
-              ) : null}
-            </div>
-            <CardTitle
-              className={cn(align === "center" ? "text-center" : "text-left")}
-            >
-              {name}
-            </CardTitle>
-          </div>
-        )}
-        {fullWidthIcon && (icon || emoji) && (
-          <CardTitle className="mb-2 text-center">{name}</CardTitle>
-        )}
-        <CardDescription
-          className={cn(
-            "text-xs leading-relaxed",
-            fullWidthIcon || direction === "col" || align === "center"
-              ? "text-center"
-              : "text-left",
-          )}
-        >
-          {description}
-        </CardDescription>
-      </CardContent>
-    </Card>
-  );
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={gridFeatureSizeToClasses[size]}
-      >
-        {gridFeatureCard}
-      </a>
-    );
-  }
-
-  return gridFeatureCard;
 }
-
-export default FeaturesGrid;

@@ -2,7 +2,9 @@ import {
   Bot,
   Calendar,
   Columns3,
+  DollarSign,
   FileUp,
+  Gift,
   ImagePlus,
   Inbox,
   LayoutDashboard,
@@ -13,6 +15,7 @@ import {
   Settings,
   Share2,
   Store,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -184,6 +187,33 @@ const UserSidebar = ({ sidebarOpen, setSidebarOpen }: UserSidebarProps) => {
                 <NavLink to="/marketplace" end className={linkClassName}>
                   <Store />
                   Marketplace
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+
+          {/* Affiliate */}
+          <div>
+            <h3 className="text-muted-foreground mb-4 ml-4 text-sm font-semibold">
+              AFFILIATE
+            </h3>
+            <ul className="mb-6 flex flex-col gap-1.5">
+              <li>
+                <NavLink to="/affiliate" end className={linkClassName}>
+                  <Gift />
+                  Dashboard
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/affiliate/earnings" end className={linkClassName}>
+                  <DollarSign />
+                  Earnings
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/affiliate/withdraw" end className={linkClassName}>
+                  <Wallet />
+                  Withdraw
                 </NavLink>
               </li>
             </ul>

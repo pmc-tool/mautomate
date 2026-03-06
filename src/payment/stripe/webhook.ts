@@ -19,6 +19,7 @@ import {
   addTopUpCredits,
 } from "../user";
 import { stripeClient } from "./stripeClient";
+import { processAffiliateCommission } from "../../affiliate/affiliateService";
 
 /**
  * Stripe requires a raw request to construct events successfully.
@@ -125,6 +126,12 @@ async function handleCheckoutSessionCompleted(
         purchasedAt: new Date(),
       },
     });
+
+    // Affiliate commission for extension purchase
+    const amountPaid = (session.amount_total ?? 0) / 100;
+    if (amountPaid > 0) {
+      await processAffiliateCommission(userId, "extension", amountPaid);
+    }
     return;
   }
 
@@ -138,6 +145,15 @@ async function handleCheckoutSessionCompleted(
       await addTopUpCredits(customerId, paymentPlanId);
     } catch (err) {
       console.error("[Webhook] Failed to add top-up credits:", err);
+    }
+
+    // Affiliate commission for top-up
+    const topUpAmount = (session.amount_total ?? 0) / 100;
+    if (topUpAmount > 0) {
+      const topUpUser = await context.entities.User.findUnique({ where: { paymentProcessorUserId: customerId } });
+      if (topUpUser) {
+        await processAffiliateCommission(topUpUser.id, "topup", topUpAmount);
+      }
     }
   }
 }
@@ -173,6 +189,15 @@ async function handleInvoicePaid(
 
     // Refresh plan credits
     await refreshPlanCredits(customerId, paymentPlanId);
+
+    // Affiliate commission for subscription payment
+    const subAmount = (invoice.amount_paid ?? 0) / 100;
+    if (subAmount > 0) {
+      const subUser = await prismaUserDelegate.findUnique({ where: { paymentProcessorUserId: customerId } });
+      if (subUser) {
+        await processAffiliateCommission(subUser.id, "subscription", subAmount);
+      }
+    }
   } else if (plan.effect.kind === "topup") {
     // Top-up via invoice (one-time product)
     await addTopUpCredits(customerId, paymentPlanId);

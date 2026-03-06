@@ -80,5 +80,6 @@ function generateMockUserData(): MockUserData {
     bio: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.2 }) ?? null,
     avatarUrl: null,
     company: faker.helpers.maybe(() => faker.company.name(), { probability: 0.4 }) ?? null,
+    referredByCode: null,
   };
 }

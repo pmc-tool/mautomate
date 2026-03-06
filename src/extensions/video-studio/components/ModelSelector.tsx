@@ -26,19 +26,19 @@ const TIER_ICONS = {
 const TIER_BORDER = {
   budget: "hover:border-green-400 dark:hover:border-green-600",
   standard: "hover:border-blue-400 dark:hover:border-blue-600",
-  premium: "hover:border-purple-400 dark:hover:border-purple-600",
+  premium: "hover:border-[#bd711d] dark:hover:border-[#d4923e]",
 };
 
 const TIER_SELECTED = {
   budget: "border-green-500 ring-green-500/20 dark:border-green-400",
   standard: "border-blue-500 ring-blue-500/20 dark:border-blue-400",
-  premium: "border-purple-500 ring-purple-500/20 dark:border-purple-400",
+  premium: "border-[#bd711d] ring-[#bd711d]/20 dark:border-[#d4923e]",
 };
 
 const TIER_GRADIENT = {
   budget: "from-green-500/5 to-transparent",
   standard: "from-blue-500/5 to-transparent",
-  premium: "from-purple-500/5 to-transparent",
+  premium: "from-[#bd711d]/5 to-transparent",
 };
 
 export function ModelSelector({ type, selectedKey, onSelect }: ModelSelectorProps) {

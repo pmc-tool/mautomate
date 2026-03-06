@@ -99,13 +99,6 @@ export default function BrandVoicePage({ user }: { user: AuthUser }) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {companies.map((company: any) => (
               <Card key={company.id} className="group hover:border-primary/50 transition-colors relative overflow-hidden">
-                {/* Color bar */}
-                {company.brandColor && (
-                  <div
-                    className="h-1 w-full"
-                    style={{ backgroundColor: company.brandColor }}
-                  />
-                )}
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-base">{company.name}</CardTitle>

@@ -11,6 +11,8 @@ import {
   Star,
   Inbox,
   Smile,
+  Search,
+  Pin,
 } from "lucide-react";
 import { useAction } from "wasp/client/operations";
 import {
@@ -74,14 +76,14 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
   // Empty state — AFTER all hooks
   if (!conversation) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-muted/10">
-        <div className="text-center max-w-xs">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/60">
-            <Inbox size={32} className="text-muted-foreground/60" />
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50">
+        <div className="text-center max-w-sm">
+          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+            <Inbox size={40} className="text-slate-300 dark:text-slate-600" />
           </div>
-          <h3 className="text-base font-semibold text-foreground/80">Select a conversation</h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Choose a conversation from the list to view messages and respond
+          <h3 className="text-lg font-semibold text-foreground">Select a conversation</h3>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
+            Choose a conversation from the list to view messages and respond to your customers
           </p>
         </div>
       </div>
@@ -162,37 +164,41 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
   return (
     <div className="flex flex-1 flex-col h-full min-w-0">
       {/* Chat header */}
-      <div className="flex items-center justify-between border-b px-4 py-2 bg-background">
+      <div className="flex items-center justify-between border-b px-5 py-3 bg-white dark:bg-slate-900">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold flex-shrink-0">
-            {contactName.charAt(0).toUpperCase()}
+          <div className="relative">
+            <div className="bg-gradient-to-br from-slate-600 to-slate-700 text-white flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold flex-shrink-0">
+              {contactName.charAt(0).toUpperCase()}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white dark:bg-slate-900 p-[2px]">
+              <ChannelIcon channel={conversation.channel} size={11} />
+            </div>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm truncate">{contactName}</span>
-              <ChannelIcon channel={conversation.channel} size={13} />
+              <span className="font-semibold text-[15px] truncate">{contactName}</span>
               <span className={cn(
-                "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
-                conversation.status === "open" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                conversation.status === "resolved" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-                "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium leading-none",
+                conversation.status === "open" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                conversation.status === "resolved" ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
               )}>
                 {conversation.status}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5">
               {conversation.handlerMode === "ai" && (
-                <span className="flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400">
+                <span className="flex items-center gap-1 text-[11px] text-violet-600 dark:text-violet-400 font-medium">
                   <Bot size={11} /> AI handling
                 </span>
               )}
               {conversation.handlerMode === "human" && (
-                <span className="flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400">
+                <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   <UserCheck size={11} /> Agent assigned
                 </span>
               )}
               {conversation.handlerMode === "queued" && (
-                <span className="flex items-center gap-1 text-[11px] text-orange-600 dark:text-orange-400">
+                <span className="flex items-center gap-1 text-[11px] text-orange-600 dark:text-orange-400 font-medium">
                   <Clock size={11} /> Waiting for agent
                 </span>
               )}
@@ -200,42 +206,52 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {/* Primary action button */}
           {(conversation.handlerMode === "ai" || conversation.handlerMode === "queued") && (
-            <Button variant="default" size="sm" onClick={handleTakeOver} className="h-7 text-xs px-3">
-              <UserCheck size={13} className="mr-1" />
+            <Button variant="default" size="sm" onClick={handleTakeOver} className="h-8 text-xs px-4 rounded-lg">
+              <UserCheck size={14} className="mr-1.5" />
               Take Over
             </Button>
           )}
           {conversation.handlerMode === "human" && conversation.assignedTo === currentUserId && (
-            <Button variant="outline" size="sm" onClick={handleReturnToAi} className="h-7 text-xs px-3">
-              <Bot size={13} className="mr-1" />
+            <Button variant="outline" size="sm" onClick={handleReturnToAi} className="h-8 text-xs px-4 rounded-lg">
+              <Bot size={14} className="mr-1.5" />
               Return to AI
             </Button>
           )}
 
+          <div className="h-5 w-px bg-border mx-1" />
+
           <button
             onClick={handleToggleStar}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <Star size={15} className={conversation.isStarred ? "text-yellow-500 fill-yellow-500" : ""} />
+            <Star size={16} className={conversation.isStarred ? "text-amber-500 fill-amber-500" : ""} />
+          </button>
+
+          <button className="rounded-lg p-1.5 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <Search size={16} />
+          </button>
+
+          <button className="rounded-lg p-1.5 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <Pin size={16} />
           </button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-md p-1.5 text-muted-foreground hover:bg-accent transition-colors">
-                <MoreVertical size={15} />
+              <button className="rounded-lg p-1.5 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <MoreVertical size={16} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleStatusChange("resolved")}>
-                <CheckCircle size={14} className="mr-2 text-green-600" />
-                Resolve
+                <CheckCircle size={14} className="mr-2 text-emerald-600" />
+                Mark Resolved
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleStatusChange("closed")}>
-                <XCircle size={14} className="mr-2 text-gray-500" />
-                Close
+                <XCircle size={14} className="mr-2 text-slate-500" />
+                Close Conversation
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleStatusChange("open")}>
@@ -248,14 +264,14 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
       </div>
 
       {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 bg-muted/10">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 bg-slate-50/50 dark:bg-slate-950/30">
         {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className={cn("flex gap-2 animate-pulse", i % 2 !== 0 && "justify-end")}>
-                {i % 2 === 0 && <div className="h-7 w-7 rounded-full bg-muted flex-shrink-0" />}
-                <div className="h-12 w-44 rounded-xl bg-muted" />
-                {i % 2 !== 0 && <div className="h-7 w-7 rounded-full bg-muted flex-shrink-0" />}
+                {i % 2 === 0 && <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0" />}
+                <div className="h-14 w-48 rounded-2xl bg-slate-200 dark:bg-slate-700" />
+                {i % 2 !== 0 && <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0" />}
               </div>
             ))}
           </div>
@@ -266,8 +282,8 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
         ) : (
           <>
             {/* Date header for first message */}
-            <div className="text-center mb-4">
-              <span className="text-muted-foreground text-[11px] bg-background px-3 py-1 rounded-full border">
+            <div className="text-center mb-5">
+              <span className="text-muted-foreground text-[11px] bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
                 {new Date(messages[0].createdAt).toLocaleDateString(undefined, {
                   weekday: "long",
                   month: "short",
@@ -279,8 +295,8 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
               <MessageBubble key={msg.id} message={msg} isCurrentUser={msg.senderId === currentUserId} />
             ))}
             {conversation.handlerMode === "queued" && (
-              <div className="text-center py-3">
-                <span className="inline-flex items-center gap-1.5 text-[12px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800">
+              <div className="text-center py-4">
+                <span className="inline-flex items-center gap-1.5 text-[12px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-4 py-2 rounded-full border border-orange-200 dark:border-orange-800 shadow-sm">
                   <Clock size={12} />
                   Waiting for agent to take over...
                 </span>
@@ -292,12 +308,12 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-4 py-1.5 border-t bg-background/80">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex gap-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+        <div className="px-5 py-2 border-t bg-white/80 dark:bg-slate-900/80">
+          <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+            <span className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "300ms" }} />
             </span>
             <span>
               {typingUsers.length === 1
@@ -309,17 +325,17 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
       )}
 
       {/* Composer */}
-      <div className="border-t bg-background">
+      <div className="border-t bg-white dark:bg-slate-900">
         {canSend ? (
-          <div className="px-4 py-3">
-            <div className="flex items-end gap-2 bg-muted/30 rounded-xl border px-3 py-2">
-              <button className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0 mb-0.5">
-                <Paperclip size={16} />
+          <div className="px-5 py-4">
+            <div className="flex items-end gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+              <button className="text-slate-400 hover:text-foreground transition-colors p-0.5 flex-shrink-0 mb-0.5">
+                <Paperclip size={18} />
               </button>
               <textarea
                 ref={inputRef}
                 placeholder="Type a message..."
-                className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground min-h-[20px] max-h-[120px] py-0.5"
+                className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-slate-400 min-h-[22px] max-h-[120px] py-0.5"
                 value={messageText}
                 onChange={(e) => {
                   setMessageText(e.target.value);
@@ -332,30 +348,30 @@ export function ChatPanel({ conversation, messages, isLoading, onRefresh, curren
                 disabled={isSending}
                 rows={1}
               />
-              <button className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0 mb-0.5">
-                <Smile size={16} />
+              <button className="text-slate-400 hover:text-foreground transition-colors p-0.5 flex-shrink-0 mb-0.5">
+                <Smile size={18} />
               </button>
               <Button
                 size="icon"
-                className="h-7 w-7 rounded-lg flex-shrink-0 mb-0.5"
+                className="h-8 w-8 rounded-xl flex-shrink-0 mb-0.5 bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
                 onClick={handleSend}
                 disabled={!messageText.trim() || isSending}
               >
-                <Send size={14} />
+                <Send size={15} />
               </Button>
             </div>
           </div>
         ) : (
-          <div className="px-4 py-3">
-            <div className="text-center text-sm py-2.5 px-4 rounded-xl bg-muted/40 text-muted-foreground">
+          <div className="px-5 py-4">
+            <div className="text-center text-sm py-3 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800 text-muted-foreground border border-slate-200 dark:border-slate-700">
               {conversation.handlerMode === "ai" && (
                 <span className="flex items-center justify-center gap-1.5">
-                  <Bot size={14} /> AI is handling this conversation. Click <strong className="text-foreground">Take Over</strong> to respond.
+                  <Bot size={15} className="text-violet-500" /> AI is handling this conversation. Click <strong className="text-foreground">Take Over</strong> to respond.
                 </span>
               )}
               {conversation.handlerMode === "queued" && (
                 <span className="flex items-center justify-center gap-1.5">
-                  <Clock size={14} /> Waiting for agent assignment. Click <strong className="text-foreground">Take Over</strong> to respond.
+                  <Clock size={15} className="text-orange-500" /> Waiting for agent assignment. Click <strong className="text-foreground">Take Over</strong> to respond.
                 </span>
               )}
               {conversation.handlerMode === "human" && conversation.assignedTo !== currentUserId && (

@@ -1,6 +1,9 @@
 import {
   Calendar,
   BookOpenText,
+  BookText,
+  FolderOpen,
+  Gift,
   Newspaper,
   ChevronDown,
   ChevronUp,
@@ -188,6 +191,25 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
               </li>
               {/* <!-- Menu Item Extension Settings --> */}
 
+              {/* <!-- Menu Item Affiliate --> */}
+              <li>
+                <NavLink
+                  to="/admin/affiliate"
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive || pathname.startsWith("/admin/affiliate"),
+                      },
+                    )
+                  }
+                >
+                  <Gift />
+                  Affiliate
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Affiliate --> */}
+
               {/* <!-- Menu Item Social Connect --> */}
               <li>
                 <NavLink
@@ -247,6 +269,43 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 </NavLink>
               </li>
               {/* <!-- Menu Item Articles --> */}
+
+              {/* <!-- Menu Item Docs --> */}
+              <li>
+                <NavLink
+                  to="/admin/docs"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive,
+                      },
+                    )
+                  }
+                >
+                  <BookText size={20} />
+                  Docs
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/admin/docs/categories"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive,
+                      },
+                    )
+                  }
+                >
+                  <FolderOpen size={20} />
+                  Doc Categories
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Docs --> */}
             </ul>
           </div>
 

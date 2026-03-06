@@ -14,7 +14,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  MessageSquare,
   Bot,
   Globe,
   Check,
@@ -25,11 +24,15 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  MessageCircle,
-  Send as SendIcon,
-  Instagram,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
+
+// Platform icons
+import messengerIcon from "../../../social-connect/icons/messenger.svg";
+import whatsappIcon from "../../../social-connect/icons/whatsapp.svg";
+import telegramIcon from "../../../social-connect/icons/telegram.svg";
+import instagramIcon from "../../../social-connect/icons/instagram.svg";
 import { Link } from "react-router";
 import UserDashboardLayout from "../../../user-dashboard/layout/UserDashboardLayout";
 import { Button } from "../../../client/components/ui/button";
@@ -99,8 +102,7 @@ const CHANNEL_DEFS = [
   {
     id: "messenger",
     label: "Facebook Messenger",
-    icon: MessageSquare,
-    color: "text-purple-600",
+    img: messengerIcon,
     bgColor: "bg-purple-50 dark:bg-purple-950/30",
     borderColor: "border-purple-200 dark:border-purple-800",
     description: "Connect your Facebook Page to receive and reply to Messenger conversations.",
@@ -117,8 +119,7 @@ const CHANNEL_DEFS = [
   {
     id: "whatsapp",
     label: "WhatsApp Business",
-    icon: MessageCircle,
-    color: "text-green-600",
+    img: whatsappIcon,
     bgColor: "bg-green-50 dark:bg-green-950/30",
     borderColor: "border-green-200 dark:border-green-800",
     description: "Connect via WhatsApp Cloud API to handle customer messages from WhatsApp.",
@@ -134,8 +135,7 @@ const CHANNEL_DEFS = [
   {
     id: "telegram",
     label: "Telegram",
-    icon: SendIcon,
-    color: "text-sky-600",
+    img: telegramIcon,
     bgColor: "bg-sky-50 dark:bg-sky-950/30",
     borderColor: "border-sky-200 dark:border-sky-800",
     description: "Connect a Telegram Bot to handle conversations from Telegram users.",
@@ -149,8 +149,7 @@ const CHANNEL_DEFS = [
   {
     id: "instagram",
     label: "Instagram",
-    icon: Instagram,
-    color: "text-pink-600",
+    img: instagramIcon,
     bgColor: "bg-pink-50 dark:bg-pink-950/30",
     borderColor: "border-pink-200 dark:border-pink-800",
     description: "Connect your Instagram Professional account to handle DM conversations.",
@@ -166,8 +165,7 @@ const CHANNEL_DEFS = [
   {
     id: "website",
     label: "Website Widget",
-    icon: Globe,
-    color: "text-blue-600",
+    img: undefined as string | undefined,
     bgColor: "bg-blue-50 dark:bg-blue-950/30",
     borderColor: "border-blue-200 dark:border-blue-800",
     description: "Embed a chat widget on your website. Automatically connected via WebSocket.",
@@ -279,7 +277,11 @@ function ChannelsTab() {
               const fullUrl = typeof window !== "undefined" ? window.location.origin + d.webhookPath : "https://yourdomain.com" + d.webhookPath;
               return (
                 <div key={d.id} className="flex items-center gap-2">
-                  <d.icon size={14} className={d.color} />
+                  {d.img ? (
+                    <img src={d.img} alt={d.label} className="h-3.5 w-3.5 object-contain" />
+                  ) : (
+                    <Globe size={14} className="text-blue-600" />
+                  )}
                   <span className="text-xs font-medium w-20">{d.label.split(" ")[0]}</span>
                   <code className="bg-muted px-2 py-1 rounded text-[11px] flex-1 truncate">{fullUrl}</code>
                   <Button
@@ -322,7 +324,6 @@ function ChannelCard({ def, channel, chatbotId, isExpanded, onToggle, onCreateCh
 
   const isConfigured = channel?.isConfigured || false;
   const isCreated = !!channel;
-  const Icon = def.icon;
 
   const getFieldValue = (field: any) => {
     if (formData[field.key] !== undefined) return formData[field.key];
@@ -373,7 +374,11 @@ function ChannelCard({ def, channel, chatbotId, isExpanded, onToggle, onCreateCh
       >
         <div className="flex items-center gap-3">
           <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", def.bgColor)}>
-            <Icon size={18} className={def.color} />
+            {def.img ? (
+              <img src={def.img} alt={def.label} className="h-5 w-5 object-contain" />
+            ) : (
+              <Globe size={18} className="text-blue-600" />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">

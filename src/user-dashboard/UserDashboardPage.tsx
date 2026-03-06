@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { type AuthUser } from "wasp/auth";
-import { getDashboardStats, useQuery } from "wasp/client/operations";
+import { getDashboardStats, useQuery, claimReferral } from "wasp/client/operations";
 import { Link, useNavigate } from "react-router";
 import {
   FileText,
@@ -107,6 +107,16 @@ export default function UserDashboardPage({ user }: { user: AuthUser }) {
       navigate("/admin", { replace: true });
     }
   }, [user.isAdmin, navigate]);
+
+  // Claim affiliate referral if present in localStorage
+  useEffect(() => {
+    const ref = localStorage.getItem("mAutomate_ref");
+    if (ref) {
+      claimReferral({ code: ref })
+        .then(() => localStorage.removeItem("mAutomate_ref"))
+        .catch(() => {}); // Silently fail — might be self-referral or already claimed
+    }
+  }, []);
 
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d">("30d");
   const [postType, setPostType] = useState<"all" | "social" | "seo">("all");

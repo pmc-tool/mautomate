@@ -39,6 +39,12 @@ import {
   Wand2,
 } from "lucide-react";
 
+// Type card illustrations
+import videoCreateImg from "../../../client/static/video-studio/video-create.png";
+import socialVideoImg from "../../../client/static/video-studio/social-video-create.png";
+import influencerAvatarImg from "../../../client/static/video-studio/influencer-avatar.png";
+import aiVideoClipImg from "../../../client/static/video-studio/ai-video-clip.png";
+
 interface GenerationWizardProps {
   onSubmit: (data: {
     modelKey: string;
@@ -79,11 +85,13 @@ const TYPE_CARDS: Array<{
   label: string;
   description: string;
   icon: typeof Film;
+  image: string;
+  color: string;
 }> = [
-  { type: "ttv", label: "Text to Video", description: "Generate video from a text prompt", icon: Film },
-  { type: "itv", label: "Image to Video", description: "Animate a still image into video", icon: ImageIcon },
-  { type: "avatar", label: "AI Avatar", description: "Create talking-head avatar videos", icon: User },
-  { type: "upscale", label: "Upscale", description: "Enhance video resolution", icon: Sparkles },
+  { type: "ttv", label: "Text to Video", description: "Generate video from a text prompt", icon: Film, image: videoCreateImg, color: "from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30" },
+  { type: "itv", label: "Image to Video", description: "Animate a still image into video", icon: ImageIcon, image: socialVideoImg, color: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30" },
+  { type: "avatar", label: "AI Avatar", description: "Create talking-head avatar videos", icon: User, image: influencerAvatarImg, color: "from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30" },
+  { type: "upscale", label: "Upscale", description: "Enhance video resolution", icon: Sparkles, image: aiVideoClipImg, color: "from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30" },
 ];
 
 export function GenerationWizard({
@@ -232,43 +240,42 @@ export function GenerationWizard({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {TYPE_CARDS.map((tc) => {
-              const Icon = tc.icon;
               const isSelected = genType === tc.type;
               const modelCount = VIDEO_MODELS.filter((m) => m.type === tc.type).length;
               return (
-                <Card
+                <button
                   key={tc.type}
+                  type="button"
                   onClick={() => {
                     setGenType(tc.type);
                     setSelectedModel(null);
                   }}
                   className={cn(
-                    "cursor-pointer border-2 transition-all",
+                    "relative flex items-center gap-4 rounded-2xl border-2 p-5 text-left transition-all hover:scale-[1.02]",
                     isSelected
-                      ? "border-primary ring-primary/20 ring-2"
-                      : "border-border hover:border-primary/30",
+                      ? "border-primary shadow-md ring-2 ring-primary/20"
+                      : "border-border hover:border-primary/40 hover:shadow-sm",
+                    `bg-gradient-to-br ${tc.color}`,
                   )}
                 >
-                  <CardContent className="flex items-start gap-4 p-5">
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-foreground font-semibold">{tc.label}</h3>
-                      <p className="text-muted-foreground mt-0.5 text-sm">{tc.description}</p>
-                      <Badge variant="secondary" className="mt-2 text-[10px]">
-                        {modelCount} model{modelCount !== 1 ? "s" : ""}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+                  {isSelected && (
+                    <span className="absolute top-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <img
+                    src={tc.image}
+                    alt={tc.label}
+                    className="h-20 w-20 shrink-0 object-contain"
+                  />
+                  <div>
+                    <h3 className="text-foreground font-semibold">{tc.label}</h3>
+                    <p className="text-muted-foreground mt-0.5 text-xs">{tc.description}</p>
+                    <Badge variant="secondary" className="mt-2 text-[10px]">
+                      {modelCount} model{modelCount !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                </button>
               );
             })}
           </div>

@@ -2,21 +2,13 @@ import { Input } from "../../client/components/ui/input";
 import { Label } from "../../client/components/ui/label";
 import { Switch } from "../../client/components/ui/switch";
 import { cn } from "../../client/utils";
-import { Bot, MessageCircle, Headphones, Sparkles, Cpu, BrainCircuit } from "lucide-react";
+import { Check, Plus } from "lucide-react";
+import chatbotDefaultImg from "../../client/static/chatbot/chatbot-default.png";
 
 interface WizardStepCustomizeProps {
   draft: Record<string, any>;
   onUpdate: (updates: Record<string, any>) => void;
 }
-
-const PRESET_AVATARS = [
-  { id: "bot", Icon: Bot },
-  { id: "message", Icon: MessageCircle },
-  { id: "headphones", Icon: Headphones },
-  { id: "sparkles", Icon: Sparkles },
-  { id: "cpu", Icon: Cpu },
-  { id: "brain", Icon: BrainCircuit },
-];
 
 const PRESET_COLORS = [
   "#272733",
@@ -27,79 +19,122 @@ const PRESET_COLORS = [
 ];
 
 const TOGGLES = [
-  { key: "isEmailCollect", label: "Email Collect" },
-  { key: "isContact", label: "Contact" },
-  { key: "isEmoji", label: "Emoji" },
-  { key: "isAttachment", label: "Attachment" },
-  { key: "showLogo", label: "Show Logo" },
-  { key: "showDateTime", label: "Show Date/Time" },
+  { key: "isEmailCollect", label: "Email Collect", desc: "Collect user email before chat" },
+  { key: "isContact", label: "Contact Us", desc: "Show contact form button" },
+  { key: "isEmoji", label: "Enable Emoji", desc: "Allow emoji in messages" },
+  { key: "isAttachment", label: "Attachment", desc: "Allow file attachments" },
+  { key: "showLogo", label: "Show Logo", desc: "Display logo in header" },
+  { key: "showDateTime", label: "Show Date & Time", desc: "Display timestamps on messages" },
 ];
 
 export default function WizardStepCustomize({ draft, onUpdate }: WizardStepCustomizeProps) {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Customize</h3>
-        <p className="text-muted-foreground text-sm">
-          Customize the appearance of your chatbot
-        </p>
-      </div>
+  const currentColor = draft.color || "#017BE5";
+  const triggerSize = draft.triggerSize || 60;
 
+  return (
+    <div className="space-y-7">
       {/* Avatar Selection */}
       <div className="space-y-3">
-        <Label>Avatar</Label>
-        <div className="grid grid-cols-6 gap-3">
-          {PRESET_AVATARS.map(({ id, Icon }) => (
+        <Label className="text-foreground font-medium">Avatar</Label>
+        <div className="grid grid-cols-5 gap-3">
+          {/* Default avatar */}
+          <button
+            onClick={() => onUpdate({ avatar: "" })}
+            className={cn(
+              "group relative flex h-14 w-14 items-center justify-center rounded-full border-2 transition-all hover:scale-110",
+              !draft.avatar || draft.avatar === ""
+                ? "border-primary ring-2 ring-primary/20"
+                : "border-transparent hover:border-primary/50"
+            )}
+          >
+            <img src={chatbotDefaultImg} alt="Default" className="h-10 w-10 rounded-full object-cover" />
+            {(!draft.avatar || draft.avatar === "") && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                <Check className="h-3 w-3" />
+              </span>
+            )}
+          </button>
+
+          {/* Color avatars with initials */}
+          {PRESET_COLORS.map((color) => (
             <button
-              key={id}
-              onClick={() => onUpdate({ avatar: id })}
+              key={color}
+              onClick={() => onUpdate({ avatar: `color:${color}` })}
               className={cn(
-                "flex h-14 w-14 items-center justify-center rounded-full border-2 transition-all",
-                draft.avatar === id
-                  ? "border-primary ring-primary/20 ring-2"
-                  : "border-muted hover:border-primary/50"
+                "group relative flex h-14 w-14 items-center justify-center rounded-full border-2 text-white text-lg font-bold transition-all hover:scale-110",
+                draft.avatar === `color:${color}`
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-transparent hover:border-primary/50"
               )}
-              style={{ backgroundColor: draft.color || "#017BE5" }}
+              style={{ backgroundColor: color }}
             >
-              <Icon className="h-6 w-6 text-white" />
+              AI
+              {draft.avatar === `color:${color}` && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                  <Check className="h-3 w-3" />
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Accent Color */}
+      {/* Color Selection */}
       <div className="space-y-3">
-        <Label>Accent Color</Label>
-        <div className="flex items-center gap-3">
+        <Label className="text-foreground font-medium">Accent Color</Label>
+        <div className="grid grid-cols-6 gap-3">
           {PRESET_COLORS.map((color) => (
             <button
               key={color}
               onClick={() => onUpdate({ color })}
               className={cn(
-                "h-9 w-9 rounded-full border-2 transition-all",
-                draft.color === color
-                  ? "border-primary ring-primary/20 scale-110 ring-2"
-                  : "border-transparent hover:scale-105"
+                "relative h-10 w-10 rounded-full shadow-md transition-all hover:scale-110",
+                currentColor === color
+                  ? "ring-2 ring-primary ring-offset-2"
+                  : ""
               )}
               style={{ backgroundColor: color }}
-            />
+            >
+              {currentColor === color && (
+                <Check className="h-4 w-4 text-white absolute inset-0 m-auto" />
+              )}
+            </button>
           ))}
-          <Input
-            type="color"
-            value={draft.color || "#017BE5"}
-            onChange={(e) => onUpdate({ color: e.target.value })}
-            className="h-9 w-9 cursor-pointer rounded-full border-0 p-0"
-          />
+
+          {/* Custom Color Picker */}
+          <label
+            className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow-md transition-all hover:scale-110"
+            style={{
+              background: "conic-gradient(from 90deg, #9b59b6, #3498db, #2ecc71, #f1c40f, #e67e22, #e74c3c, #9b59b6)",
+            }}
+          >
+            <Plus className="h-4 w-4 text-white drop-shadow-md" />
+            <input
+              type="color"
+              value={currentColor}
+              onChange={(e) => onUpdate({ color: e.target.value })}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </label>
+        </div>
+
+        {/* Color hex display */}
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-full shadow-sm border" style={{ backgroundColor: currentColor }} />
+          <span className="text-xs font-mono text-muted-foreground uppercase">{currentColor}</span>
         </div>
       </div>
 
-      {/* Toggle Switches */}
-      <div className="space-y-3">
-        <Label>Options</Label>
-        <div className="space-y-3">
-          {TOGGLES.map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-sm">{label}</span>
+      {/* Feature Toggles */}
+      <div className="space-y-1">
+        <Label className="text-foreground font-medium mb-3 block">Features</Label>
+        <div className="space-y-0 divide-y rounded-xl border">
+          {TOGGLES.map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div>
+                <span className="text-sm font-medium">{label}</span>
+                <p className="text-[11px] text-muted-foreground/60">{desc}</p>
+              </div>
               <Switch
                 checked={draft[key] ?? true}
                 onCheckedChange={(checked) => onUpdate({ [key]: checked })}
@@ -109,33 +144,102 @@ export default function WizardStepCustomize({ draft, onUpdate }: WizardStepCusto
         </div>
       </div>
 
+      {/* Trigger Size */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-foreground font-medium">Trigger Size</Label>
+          <span className="text-xs font-mono text-muted-foreground">{triggerSize}px</span>
+        </div>
+        <input
+          type="range"
+          min={30}
+          max={100}
+          step={1}
+          value={triggerSize}
+          onChange={(e) => onUpdate({ triggerSize: parseInt(e.target.value) })}
+          className="w-full accent-primary h-2 rounded-full appearance-none bg-muted cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+        />
+      </div>
+
       {/* Position */}
       <div className="space-y-3">
-        <Label>Position</Label>
-        <div className="flex gap-3">
+        <Label className="text-foreground font-medium">Position</Label>
+        <div className="flex gap-4">
           {(["left", "right"] as const).map((pos) => (
             <button
               key={pos}
               onClick={() => onUpdate({ position: pos })}
               className={cn(
-                "flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all",
+                "group relative flex flex-1 flex-col items-center gap-2.5 rounded-xl border-2 p-5 transition-all hover:scale-[1.03]",
                 draft.position === pos
-                  ? "border-primary bg-primary/5"
-                  : "border-muted hover:border-primary/50"
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-muted hover:border-primary/40"
               )}
             >
-              <div className="relative h-12 w-20 rounded-md border bg-muted">
-                <div
-                  className={cn(
-                    "absolute bottom-1 h-3 w-3 rounded-full",
-                    pos === "left" ? "left-1" : "right-1"
-                  )}
-                  style={{ backgroundColor: draft.color || "#017BE5" }}
-                />
-              </div>
+              {draft.position === pos && (
+                <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+                  <Check className="h-3 w-3" />
+                </span>
+              )}
+              {/* Device mockup */}
+              <svg
+                width="50"
+                height="65"
+                viewBox="0 0 50 65"
+                fill="none"
+                className={cn(pos === "right" && "-scale-x-100")}
+              >
+                {/* Phone frame */}
+                <rect x="1" y="1" width="48" height="63" rx="8" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground/30" />
+                {/* Screen */}
+                <rect x="4" y="8" width="42" height="49" rx="2" className="fill-muted/50" />
+                {/* Status bar */}
+                <rect x="15" y="3" width="20" height="3" rx="1.5" className="fill-muted-foreground/20" />
+                {/* Home indicator */}
+                <rect x="17" y="60" width="16" height="2" rx="1" className="fill-muted-foreground/20" />
+                {/* Chat bubble trigger */}
+                <circle cx="12" cy="50" r="5" className="fill-primary" />
+              </svg>
               <span className="text-xs font-medium capitalize">{pos}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Embed Dimensions */}
+      <div className="space-y-4">
+        <Label className="text-foreground font-medium">Widget Dimensions</Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Width</span>
+              <span className="text-xs font-mono text-muted-foreground">{draft.embedWidth || 400}px</span>
+            </div>
+            <input
+              type="range"
+              min={200}
+              max={600}
+              step={25}
+              value={draft.embedWidth || 400}
+              onChange={(e) => onUpdate({ embedWidth: parseInt(e.target.value) })}
+              className="w-full accent-primary h-1.5 rounded-full appearance-none bg-muted cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Height</span>
+              <span className="text-xs font-mono text-muted-foreground">{draft.embedHeight || 600}px</span>
+            </div>
+            <input
+              type="range"
+              min={300}
+              max={800}
+              step={25}
+              value={draft.embedHeight || 600}
+              onChange={(e) => onUpdate({ embedHeight: parseInt(e.target.value) })}
+              className="w-full accent-primary h-1.5 rounded-full appearance-none bg-muted cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+            />
+          </div>
         </div>
       </div>
     </div>

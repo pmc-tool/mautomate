@@ -55,6 +55,7 @@ model User {
   postMedia                 PostMedia[]
   blogPosts                 BlogPost[]
   helpArticles              HelpArticle[]
+  docPages                  DocPage[]
 
   inboxConversations        InboxConversation[]
   inboxContacts             InboxContact[]
@@ -62,6 +63,13 @@ model User {
 
   videoProjects             VideoProject[]
   videoGenerations          VideoGeneration[]
+
+  // Affiliate system
+  affiliateLink             AffiliateLink?
+  affiliateConversion       AffiliateConversion? @relation("affiliateConvertedUser")
+  earnerCommissions         AffiliateCommission[] @relation("affiliateEarner")
+  affiliateWithdrawals      AffiliateWithdrawal[]
+  referredByCode            String?
 }
 
 
@@ -572,6 +580,43 @@ model HelpArticle {
 }
 
 // ---------------------------------------------------------------------------
+// Documentation Module
+// ---------------------------------------------------------------------------
+
+model DocCategory {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  name        String
+  slug        String    @unique
+  description String?
+  icon        String?
+  order       Int       @default(0)
+  isPublished Boolean   @default(false)
+  pages       DocPage[]
+}
+
+model DocPage {
+  id             String      @id @default(uuid())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  author         User        @relation(fields: [authorId], references: [id])
+  authorId       String
+  category       DocCategory @relation(fields: [categoryId], references: [id])
+  categoryId     String
+  title          String
+  slug           String      @unique
+  excerpt        String?
+  content        String
+  videoUrl       String?
+  order          Int         @default(0)
+  status         String      @default("draft") // draft | published | archived
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+}
+
+// ---------------------------------------------------------------------------
 // Credit System
 // ---------------------------------------------------------------------------
 
@@ -718,4 +763,80 @@ model InboxCannedResponse {
   title           String
   content         String
   category        String?
+}
+
+// ---------------------------------------------------------------------------
+// Affiliate System
+// ---------------------------------------------------------------------------
+
+model AffiliateLink {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String    @unique
+  code        String    @unique
+  isActive    Boolean   @default(true)
+  customSlug  String?
+  clicks      AffiliateClick[]
+  conversions AffiliateConversion[]
+  commissions AffiliateCommission[]
+}
+
+model AffiliateClick {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  link        AffiliateLink @relation(fields: [linkId], references: [id])
+  linkId      String
+  ip          String?
+  userAgent   String?
+  referrer    String?
+  country     String?
+  metadata    Json?
+}
+
+model AffiliateConversion {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  link            AffiliateLink @relation(fields: [linkId], references: [id])
+  linkId          String
+  convertedUser   User      @relation("affiliateConvertedUser", fields: [convertedUserId], references: [id])
+  convertedUserId String    @unique
+  eventType       String
+  metadata        Json?
+}
+
+model AffiliateCommission {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  link            AffiliateLink @relation(fields: [linkId], references: [id])
+  linkId          String
+  affiliate       User      @relation("affiliateEarner", fields: [affiliateId], references: [id])
+  affiliateId     String
+  amount          Float
+  originalAmount  Float
+  commissionRate  Float
+  status          String    @default("pending")
+  eventType       String
+  stripePaymentId String?
+  paidAt          DateTime?
+  description     String?
+  metadata        Json?
+}
+
+model AffiliateWithdrawal {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  amount          Float
+  method          String
+  status          String    @default("pending")
+  paymentDetails  Json
+  processedAt     DateTime?
+  processedBy     String?
+  rejectionReason String?
+  transactionId   String?
 }

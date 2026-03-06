@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "../../client/components/ui/select";
 import { cn } from "../../client/utils";
-import { Globe, MessageCircle, Phone, Send } from "lucide-react";
+import { Globe, MessageCircle, Phone, Send, Check } from "lucide-react";
 import { saveChatbotChannel, deleteChatbotChannel } from "wasp/client/operations";
 import { useToast } from "../../client/hooks/use-toast";
 
@@ -37,33 +37,14 @@ const LANGUAGES = [
   { value: "ar", label: "Arabic" },
   { value: "hi", label: "Hindi" },
   { value: "tr", label: "Turkish" },
+  { value: "bn", label: "Bengali" },
 ];
 
 const CHANNEL_CARDS = [
-  {
-    key: "website",
-    icon: Globe,
-    label: "Website",
-    description: "Embed on your website",
-  },
-  {
-    key: "messenger",
-    icon: MessageCircle,
-    label: "Messenger",
-    description: "Facebook Messenger bot",
-  },
-  {
-    key: "whatsapp",
-    icon: Phone,
-    label: "WhatsApp",
-    description: "WhatsApp Business bot",
-  },
-  {
-    key: "telegram",
-    icon: Send,
-    label: "Telegram",
-    description: "Telegram bot",
-  },
+  { key: "website", icon: Globe, label: "Website", description: "Embed on your website" },
+  { key: "messenger", icon: MessageCircle, label: "Messenger", description: "Facebook Messenger" },
+  { key: "whatsapp", icon: Phone, label: "WhatsApp", description: "WhatsApp Business" },
+  { key: "telegram", icon: Send, label: "Telegram", description: "Telegram bot" },
 ];
 
 export default function WizardStepConfigure({
@@ -77,15 +58,12 @@ export default function WizardStepConfigure({
 
   const handleToggleChannel = async (channel: string) => {
     const isSelected = selectedChannels.includes(channel);
-
-    // Must have at least 1 channel
     if (isSelected && selectedChannels.length <= 1) {
       toast({ title: "At least one channel is required", variant: "destructive" });
       return;
     }
 
     if (isSelected) {
-      // Remove channel — find the record and delete
       const record = channelRecords.find((r: any) => r.channel === channel);
       if (record) {
         try {
@@ -97,7 +75,6 @@ export default function WizardStepConfigure({
       }
       onUpdate({ channels: selectedChannels.filter((c) => c !== channel) });
     } else {
-      // Add channel
       try {
         await saveChatbotChannel({ chatbotId, channel: channel as any });
       } catch (err: any) {
@@ -109,17 +86,98 @@ export default function WizardStepConfigure({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">Configure</h3>
-        <p className="text-muted-foreground text-sm">
-          Set up the basic settings for your chatbot
+    <div className="space-y-7">
+      {/* Title */}
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Chatbot Title</Label>
+        <Input
+          value={draft.title || ""}
+          onChange={(e) => onUpdate({ title: e.target.value })}
+          placeholder="MagicBot"
+          className="h-11 rounded-xl"
+        />
+      </div>
+
+      {/* Bubble Message */}
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Bubble Message</Label>
+        <Input
+          value={draft.bubbleMessage || ""}
+          onChange={(e) => onUpdate({ bubbleMessage: e.target.value })}
+          placeholder="Hi! How can I help you?"
+          className="h-11 rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground/60 leading-relaxed">
+          Shown next to the chat bubble before the user opens the chat
         </p>
       </div>
 
-      {/* Channel Selection */}
+      {/* Welcome Message */}
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Welcome Message</Label>
+        <Input
+          value={draft.welcomeMessage || ""}
+          onChange={(e) => onUpdate({ welcomeMessage: e.target.value })}
+          placeholder="Hello! How can I assist you today?"
+          className="h-11 rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground/60 leading-relaxed">
+          First message shown when the chat window opens
+        </p>
+      </div>
+
+      {/* Instructions */}
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Chatbot Instructions</Label>
+        <Textarea
+          rows={4}
+          value={draft.instructions || ""}
+          onChange={(e) => onUpdate({ instructions: e.target.value })}
+          placeholder="You are a helpful assistant for our company. Answer questions about our products and services..."
+          className="rounded-xl resize-none"
+        />
+        <p className="text-xs text-muted-foreground/60 leading-relaxed">
+          Tell the AI how to behave and what to know about your business
+        </p>
+      </div>
+
+      {/* Don't go beyond */}
+      <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
+        <div>
+          <Label className="text-foreground font-medium">Don't go beyond instructions</Label>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">
+            Only answer questions related to the instructions above
+          </p>
+        </div>
+        <Switch
+          checked={draft.dontGoBeyond || false}
+          onCheckedChange={(checked) => onUpdate({ dontGoBeyond: checked })}
+        />
+      </div>
+
+      {/* Language */}
+      <div className="space-y-2">
+        <Label className="text-foreground font-medium">Language</Label>
+        <Select
+          value={draft.language || "auto"}
+          onValueChange={(value) => onUpdate({ language: value === "auto" ? "" : value })}
+        >
+          <SelectTrigger className="h-11 rounded-xl">
+            <SelectValue placeholder="Auto Detect" />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((lang) => (
+              <SelectItem key={lang.value} value={lang.value}>
+                {lang.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Channels */}
       <div className="space-y-3">
-        <Label>Channels</Label>
+        <Label className="text-foreground font-medium">Channels</Label>
         <div className="grid grid-cols-2 gap-3">
           {CHANNEL_CARDS.map((card) => {
             const isSelected = selectedChannels.includes(card.key);
@@ -130,116 +188,34 @@ export default function WizardStepConfigure({
                 type="button"
                 onClick={() => handleToggleChannel(card.key)}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all",
+                  "relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all hover:scale-[1.02]",
                   isSelected
-                    ? "border-primary bg-primary/5 ring-2 ring-primary"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:border-primary/40"
                 )}
               >
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full",
-                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  )}
-                >
+                {isSelected && (
+                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <div className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
+                  isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                )}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{card.label}</p>
-                  <p className="text-muted-foreground text-[11px]">{card.description}</p>
+                  <p className="text-muted-foreground text-[10px]">{card.description}</p>
                 </div>
               </button>
             );
           })}
         </div>
-        <p className="text-muted-foreground text-xs">
-          Select where you want to deploy your chatbot. At least one channel is required.
+        <p className="text-xs text-muted-foreground/60">
+          Select where you want to deploy your chatbot
         </p>
-      </div>
-
-      {/* Existing form fields */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={draft.title || ""}
-            onChange={(e) => onUpdate({ title: e.target.value })}
-            placeholder="My Chatbot"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="bubbleMessage">Bubble Message</Label>
-          <Input
-            id="bubbleMessage"
-            value={draft.bubbleMessage || ""}
-            onChange={(e) => onUpdate({ bubbleMessage: e.target.value })}
-            placeholder="Hi! How can I help you?"
-          />
-          <p className="text-muted-foreground text-xs">
-            Shown next to the chat bubble before the user opens the chat
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="welcomeMessage">Welcome Message</Label>
-          <Input
-            id="welcomeMessage"
-            value={draft.welcomeMessage || ""}
-            onChange={(e) => onUpdate({ welcomeMessage: e.target.value })}
-            placeholder="Hello! How can I assist you today?"
-          />
-          <p className="text-muted-foreground text-xs">
-            First message shown when the chat window opens
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="instructions">Instructions</Label>
-          <Textarea
-            id="instructions"
-            rows={4}
-            value={draft.instructions || ""}
-            onChange={(e) => onUpdate({ instructions: e.target.value })}
-            placeholder="You are a helpful assistant for our company. Answer questions about our products and services..."
-          />
-          <p className="text-muted-foreground text-xs">
-            Tell the AI how to behave and what to know about your business
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>Don't go beyond instructions</Label>
-            <p className="text-muted-foreground text-xs">
-              Only answer questions related to the instructions above
-            </p>
-          </div>
-          <Switch
-            checked={draft.dontGoBeyond || false}
-            onCheckedChange={(checked) => onUpdate({ dontGoBeyond: checked })}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Language</Label>
-          <Select
-            value={draft.language || "auto"}
-            onValueChange={(value) => onUpdate({ language: value === "auto" ? "" : value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Auto Detect" />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map((lang) => (
-                <SelectItem key={lang.value} value={lang.value}>
-                  {lang.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
     </div>
   );

@@ -20,8 +20,8 @@ export function ConversationListItem({ conversation, isSelected, onClick }: Conv
     Clock;
 
   const handlerColor =
-    conversation.handlerMode === "ai" ? "text-purple-500" :
-    conversation.handlerMode === "human" ? "text-blue-500" :
+    conversation.handlerMode === "ai" ? "text-violet-500" :
+    conversation.handlerMode === "human" ? "text-emerald-500" :
     "text-orange-500";
 
   const HandlerIcon = handlerIcon;
@@ -30,50 +30,60 @@ export function ConversationListItem({ conversation, isSelected, onClick }: Conv
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-2 transition-all",
+        "w-full text-left px-3 py-3 transition-all relative",
         isSelected
-          ? "bg-primary/5 border-l-primary"
+          ? "bg-primary/5 dark:bg-primary/10"
           : hasUnread
-            ? "border-l-transparent hover:bg-muted/60"
-            : "border-l-transparent hover:bg-muted/40",
+            ? "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+            : "hover:bg-slate-50 dark:hover:bg-slate-800/40",
       )}
     >
-      <div className="flex items-start gap-2.5">
+      {/* Active indicator bar */}
+      {isSelected && (
+        <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-primary" />
+      )}
+
+      <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className="relative flex-shrink-0 mt-0.5">
           <div className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold",
+            "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold",
             isSelected
-              ? "bg-primary text-primary-foreground"
+              ? "bg-gradient-to-br from-slate-600 to-slate-700 text-white"
               : hasUnread
-                ? "bg-primary/10 text-primary"
-                : "bg-muted text-muted-foreground"
+                ? "bg-gradient-to-br from-primary/80 to-primary text-white"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
           )}>
             {name.charAt(0).toUpperCase()}
           </div>
-          {/* Channel indicator dot */}
-          <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-background p-[2px]">
+          {/* Channel indicator */}
+          <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white dark:bg-slate-900 p-[2px] shadow-sm">
             <ChannelIcon channel={conversation.channel} size={10} />
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <span className={cn("text-[13px] truncate", hasUnread ? "font-semibold" : "font-medium")}>
+          <div className="flex items-center justify-between gap-2">
+            <span className={cn("text-[13px] truncate", hasUnread ? "font-bold text-foreground" : "font-medium text-foreground/80")}>
               {name}
             </span>
-            <span className="text-muted-foreground text-[10px] flex-shrink-0">{timeAgo}</span>
+            <span className="text-muted-foreground text-[10px] flex-shrink-0 tabular-nums">{timeAgo}</span>
+          </div>
+
+          <div className="flex items-center gap-1 mt-0.5">
+            <ChannelIcon channel={conversation.channel} size={10} className="opacity-50 flex-shrink-0" />
+            <span className="text-muted-foreground/70 text-[10px] capitalize">@{conversation.channel}</span>
           </div>
 
           <p className={cn(
-            "text-[12px] truncate mt-0.5 leading-tight",
-            hasUnread ? "text-foreground/80" : "text-muted-foreground"
+            "text-[12px] truncate mt-1",
+            hasUnread ? "text-foreground/80 font-medium" : "text-muted-foreground"
           )}>
             {conversation.lastMessagePreview || "No messages yet"}
           </p>
 
-          <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center justify-between mt-1.5">
             <div className="flex items-center gap-1.5">
               <HandlerIcon size={11} className={handlerColor} />
               {conversation.status !== "open" && (
@@ -82,10 +92,10 @@ export function ConversationListItem({ conversation, isSelected, onClick }: Conv
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {conversation.isStarred && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {conversation.isStarred && <Star size={11} className="text-amber-500 fill-amber-500" />}
               {hasUnread && (
-                <span className="bg-primary text-primary-foreground flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold">
+                <span className="bg-emerald-500 text-white flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-sm">
                   {conversation.unreadCount}
                 </span>
               )}

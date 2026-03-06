@@ -1,8 +1,20 @@
 import type { AvatarOption } from "../modelRegistry";
 import { cn } from "../../../client/utils";
-import { Card, CardContent } from "../../../client/components/ui/card";
 import { Badge } from "../../../client/components/ui/badge";
-import { Check, User } from "lucide-react";
+import { Check, Mic, Star } from "lucide-react";
+
+// Avatar images
+import emilyImg from "../../../client/static/video-studio/emily-primary.png";
+import marcusImg from "../../../client/static/video-studio/marcus-primary.png";
+import aishaImg from "../../../client/static/video-studio/aisha-walking.png";
+import elenaImg from "../../../client/static/video-studio/elena-primary.png";
+
+const AVATAR_IMAGES: Record<string, string> = {
+  emily: emilyImg,
+  marcus: marcusImg,
+  aisha: aishaImg,
+  elena: elenaImg,
+};
 
 interface AvatarPickerProps {
   avatars: AvatarOption[];
@@ -13,76 +25,90 @@ interface AvatarPickerProps {
 export function AvatarPicker({ avatars, selectedId, onChange }: AvatarPickerProps) {
   return (
     <div className="space-y-3">
-      <label className="text-foreground text-sm font-medium">Choose Avatar</label>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex items-center gap-2">
+        <label className="text-foreground text-sm font-medium">Choose Avatar</label>
+        <Badge variant="secondary" className="text-[10px]">
+          {avatars.length} available
+        </Badge>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         {avatars.map((avatar) => {
           const isSelected = selectedId === avatar.id;
+          const imgSrc = AVATAR_IMAGES[avatar.id];
           return (
-            <Card
+            <button
               key={avatar.id}
+              type="button"
               onClick={() => onChange(avatar.id)}
               className={cn(
-                "cursor-pointer border-2 transition-all",
+                "relative flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all hover:scale-[1.02]",
                 isSelected
-                  ? "border-primary ring-primary/20 ring-2"
-                  : "border-border hover:border-muted-foreground/30",
+                  ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/40 hover:shadow-sm",
               )}
             >
-              <CardContent className="flex items-center gap-4 p-4">
-                {/* Avatar preview */}
-                <div
-                  className={cn(
-                    "flex h-14 w-14 shrink-0 items-center justify-center rounded-full",
-                    avatar.gender === "female"
-                      ? "bg-pink-100 dark:bg-pink-900/30"
-                      : "bg-blue-100 dark:bg-blue-900/30",
-                  )}
-                >
-                  {avatar.previewUrl ? (
-                    <img
-                      src={avatar.previewUrl}
-                      alt={avatar.name}
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <User
-                      className={cn(
-                        "h-7 w-7",
-                        avatar.gender === "female" ? "text-pink-500" : "text-blue-500",
-                      )}
-                    />
-                  )}
-                </div>
+              {/* Selection indicator */}
+              {isSelected && (
+                <span className="absolute top-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-semibold">
-                      {avatar.name}
-                    </p>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "px-1.5 py-0 text-[10px]",
-                        avatar.gender === "female"
-                          ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400"
-                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                      )}
-                    >
-                      {avatar.gender}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {avatar.style}
-                  </p>
-                </div>
-
-                {isSelected && (
-                  <div className="bg-primary flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
-                    <Check className="text-primary-foreground h-3 w-3" />
-                  </div>
+              {/* Avatar image */}
+              <div
+                className={cn(
+                  "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl",
+                  avatar.gender === "female"
+                    ? "bg-gradient-to-br from-pink-100 to-rose-50 dark:from-pink-950/40 dark:to-rose-950/30"
+                    : "bg-gradient-to-br from-blue-100 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30",
                 )}
-              </CardContent>
-            </Card>
+              >
+                {imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={avatar.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-muted-foreground/40">
+                    {avatar.name[0]}
+                  </span>
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-foreground text-sm font-semibold">
+                    {avatar.name}
+                  </p>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "px-1.5 py-0 text-[10px]",
+                      avatar.gender === "female"
+                        ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                    )}
+                  >
+                    {avatar.gender}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  {avatar.style}
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Mic className="h-3 w-3" />
+                    Voice ready
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Star className="h-3 w-3" />
+                    HD quality
+                  </span>
+                </div>
+              </div>
+            </button>
           );
         })}
       </div>

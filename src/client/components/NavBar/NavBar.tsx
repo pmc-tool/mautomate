@@ -56,9 +56,9 @@ export default function NavBar({
       >
         <div
           className={cn("transition-all duration-300", {
-            "bg-background/90 border-border mx-4 rounded-full border pr-2 shadow-lg backdrop-blur-lg md:mx-20 lg:pr-0":
+            "mx-4 rounded-full border border-[#eee4dd] bg-white/95 pr-2 shadow-lg backdrop-blur-lg md:mx-20 lg:pr-0 dark:border-border dark:bg-background/90":
               isScrolled,
-            "bg-background/80 border-border mx-0 border-b backdrop-blur-lg":
+            "mx-0 border-b border-[#eee4dd] bg-white/95 backdrop-blur-lg dark:border-border dark:bg-background/80":
               !isScrolled,
           })}
         >
@@ -67,7 +67,7 @@ export default function NavBar({
               "flex items-center justify-between transition-all duration-300",
               {
                 "p-3 lg:px-6": isScrolled,
-                "p-6 lg:px-8": !isScrolled,
+                "px-6 py-4 lg:px-8": !isScrolled,
               },
             )}
             aria-label="Global"
@@ -80,7 +80,7 @@ export default function NavBar({
                 <NavLogo isScrolled={isScrolled} />
               </WaspRouterLink>
 
-              <ul className="ml-4 hidden items-center gap-6 lg:flex">
+              <ul className="ml-4 hidden items-center gap-7 lg:flex">
                 {renderNavigationItems(navigationItems)}
               </ul>
             </div>
@@ -107,22 +107,15 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
       {isUserLoading ? null : !user ? (
         <WaspRouterLink
           to={routes.LoginRoute.to}
-          className={cn(
-            "ml-3 leading-6 font-semibold transition-all duration-300",
-            {
-              "text-sm": !isScrolled,
-              "text-xs": isScrolled,
-            },
-          )}
+          className="ml-3"
         >
-          <div className="text-foreground hover:text-primary flex items-center transition-colors duration-300 ease-in-out">
-            Log in{" "}
+          <div className={cn(
+            "flex items-center gap-1.5 rounded-full border border-[#eee4dd] bg-white px-4 py-2 text-sm font-medium text-[#0a0f14] shadow-sm transition-all duration-200 hover:shadow-md dark:border-border dark:bg-card dark:text-foreground",
+            isScrolled ? "text-xs px-3 py-1.5" : "text-sm",
+          )}>
+            Log in
             <LogIn
-              size={isScrolled ? "1rem" : "1.1rem"}
-              className={cn("transition-all duration-300", {
-                "mt-[0.1rem] ml-1": !isScrolled,
-                "ml-1": isScrolled,
-              })}
+              size={isScrolled ? "0.9rem" : "1rem"}
             />
           </div>
         </WaspRouterLink>
@@ -213,7 +206,7 @@ function renderNavigationItems(
   const menuStyles = cn({
     "block rounded-lg px-3 py-2 text-sm font-medium leading-7 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors":
       !!setMobileMenuOpen,
-    "text-sm font-normal leading-6 text-foreground duration-300 ease-in-out hover:text-primary transition-colors":
+    "text-sm font-medium leading-6 text-[#2e2e2e] dark:text-foreground duration-300 ease-in-out hover:text-[#bd711d] dark:hover:text-primary transition-colors":
       !setMobileMenuOpen,
   });
 

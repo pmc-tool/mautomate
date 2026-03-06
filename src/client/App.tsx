@@ -23,7 +23,9 @@ export default function App() {
       location.pathname === "/blog" ||
       location.pathname.startsWith("/blog/") ||
       location.pathname === "/articles" ||
-      location.pathname.startsWith("/articles/")
+      location.pathname.startsWith("/articles/") ||
+      location.pathname === "/docs" ||
+      location.pathname.startsWith("/docs/")
     );
   }, [location]);
 
@@ -43,11 +45,28 @@ export default function App() {
   }, [location]);
 
   const isUserDashboard = useMemo(() => {
-    const userDashboardPaths = ["/dashboard", "/file-upload", "/social-connect", "/brand-voice", "/chatbot", "/account", "/checkout", "/marketplace", "/extensions", "/post-hub", "/content-calendar", "/inbox", "/video-studio"];
+    const userDashboardPaths = ["/dashboard", "/file-upload", "/social-connect", "/brand-voice", "/chatbot", "/account", "/checkout", "/marketplace", "/extensions", "/post-hub", "/content-calendar", "/inbox", "/video-studio", "/affiliate"];
     return userDashboardPaths.some(
       (path) => location.pathname === path || location.pathname.startsWith(path + "/")
     );
   }, [location]);
+
+  // Capture affiliate referral code from URL param or cookie
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      localStorage.setItem("mAutomate_ref", ref);
+      return;
+    }
+    // Also check cookie set by /api/affiliate/track/:code
+    if (!localStorage.getItem("mAutomate_ref")) {
+      const match = document.cookie.match(/(?:^|;\s*)mAutomate_ref=([^;]+)/);
+      if (match) {
+        localStorage.setItem("mAutomate_ref", decodeURIComponent(match[1]));
+      }
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (location.hash) {

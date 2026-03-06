@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AuthUser } from "wasp/auth";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   createHelpArticle,
   getAdminHelpArticleById,
   updateHelpArticle,
   useQuery,
 } from "wasp/client/operations";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, ImageIcon, Loader2, Pencil } from "lucide-react";
 import Breadcrumb from "../../layout/Breadcrumb";
 import DefaultLayout from "../../layout/DefaultLayout";
 import { Button } from "../../../client/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../client/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../client/components/ui/card";
 import { Input } from "../../../client/components/ui/input";
 import { Label } from "../../../client/components/ui/label";
 import {
@@ -21,8 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../client/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../client/components/ui/tabs";
 import { Textarea } from "../../../client/components/ui/textarea";
 import { toast } from "../../../client/hooks/use-toast";
+import RichTextEditor from "../../../client/components/RichTextEditor";
 
 function toDatetimeLocal(dateString: string | Date | null | undefined) {
   if (!dateString) return "";
@@ -81,7 +83,7 @@ export default function AdminArticlesFormPage({ user }: { user: AuthUser }) {
       return;
     }
 
-    if (!content.trim()) {
+    if (!content.trim() || content === "<p></p>") {
       toast({ title: "Validation", description: "Content is required.", variant: "destructive" });
       return;
     }
@@ -98,7 +100,7 @@ export default function AdminArticlesFormPage({ user }: { user: AuthUser }) {
         slug: slug.trim() || undefined,
         category: category.trim() || "General",
         excerpt: excerpt.trim() || null,
-        content: content.trim(),
+        content,
         coverImageUrl: coverImageUrl.trim() || null,
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
@@ -136,108 +138,230 @@ export default function AdminArticlesFormPage({ user }: { user: AuthUser }) {
     <DefaultLayout user={user}>
       <Breadcrumb pageName={isEdit ? "Edit Article" : "New Article"} />
 
-      <form className="mx-auto max-w-4xl space-y-6" onSubmit={handleSubmit}>
-        <div>
-          <Button type="button" variant="ghost" onClick={() => navigate("/admin/articles")}>
+      <form onSubmit={handleSubmit}>
+        {/* Top bar */}
+        <div className="mb-5 flex items-center justify-between">
+          <Button type="button" variant="ghost" size="sm" onClick={() => navigate("/admin/articles")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Articles
           </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate("/admin/articles")}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving ? "Saving..." : isEdit ? "Update Article" : "Create Article"}
+            </Button>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Article Details</CardTitle>
-            <CardDescription>Create and manage help center content.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="How to create a chatbot" required />
-            </div>
+        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+          {/* Left — Main content */}
+          <div className="space-y-6">
+            {/* Title */}
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Article title"
+              className="border-none bg-transparent text-2xl font-bold shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0 px-0"
+              required
+            />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="how-to-create-a-chatbot" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Chatbot" />
-              </div>
-            </div>
+            {/* Editor with Preview tabs */}
+            <Tabs defaultValue="edit">
+              <TabsList>
+                <TabsTrigger value="edit" className="gap-1.5">
+                  <Pencil size={14} />
+                  Edit
+                </TabsTrigger>
+                <TabsTrigger value="preview" className="gap-1.5">
+                  <Eye size={14} />
+                  Preview
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="excerpt">Excerpt</Label>
-              <Textarea id="excerpt" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short summary shown on article listings." rows={3} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="content">Content *</Label>
-              <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your guide content step by step." rows={18} required />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="coverImageUrl">Cover Image URL</Label>
-              <Input id="coverImageUrl" value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} placeholder="https://..." />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Publishing and SEO</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="publishedAt">Publish Date</Label>
-                <Input
-                  id="publishedAt"
-                  type="datetime-local"
-                  value={publishedAt}
-                  onChange={(e) => setPublishedAt(e.target.value)}
+              <TabsContent value="edit" className="mt-3">
+                <RichTextEditor
+                  content={content}
+                  onChange={setContent}
+                  placeholder="Write your help article content here..."
                 />
-              </div>
-            </div>
+              </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="seoTitle">SEO Title</Label>
-              <Input id="seoTitle" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="Search result title" />
-            </div>
+              <TabsContent value="preview" className="mt-3">
+                <div className="rounded-md border bg-background p-6">
+                  {coverImageUrl && (
+                    <img
+                      src={coverImageUrl}
+                      alt={title || "Cover"}
+                      className="mb-6 max-h-[320px] w-full rounded-lg object-cover"
+                    />
+                  )}
+                  {content && content !== "<p></p>" ? (
+                    <div
+                      className="prose prose-neutral dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: content }}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="seoDescription">SEO Description</Label>
-              <Textarea
-                id="seoDescription"
-                value={seoDescription}
-                onChange={(e) => setSeoDescription(e.target.value)}
-                placeholder="Search result description"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Right — Sidebar settings */}
+          <div className="space-y-5">
+            {/* Publish */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">Publish</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Status</Label>
+                  <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Publish Date</Label>
+                  <Input
+                    type="datetime-local"
+                    value={publishedAt}
+                    onChange={(e) => setPublishedAt(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate("/admin/articles")}>Cancel</Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? "Saving..." : isEdit ? "Update Article" : "Create Article"}
-          </Button>
+            {/* Details */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Slug</Label>
+                  <Input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="auto-generated"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Category</Label>
+                  <Input
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="General"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Excerpt</Label>
+                  <Textarea
+                    value={excerpt}
+                    onChange={(e) => setExcerpt(e.target.value)}
+                    placeholder="Short summary for listing pages."
+                    rows={3}
+                    className="text-sm"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cover Image */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">Cover Image</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Image URL</Label>
+                  <Input
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="h-9"
+                  />
+                </div>
+                {coverImageUrl ? (
+                  <div className="overflow-hidden rounded-md border">
+                    <img
+                      src={coverImageUrl}
+                      alt="Cover preview"
+                      className="h-36 w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-28 items-center justify-center rounded-md border border-dashed bg-muted/30">
+                    <div className="text-center">
+                      <ImageIcon size={24} className="mx-auto text-muted-foreground/40" />
+                      <p className="mt-1 text-[11px] text-muted-foreground">No cover image</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* SEO */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">SEO</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">SEO Title</Label>
+                  <Input
+                    value={seoTitle}
+                    onChange={(e) => setSeoTitle(e.target.value)}
+                    placeholder="Search result title"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">SEO Description</Label>
+                  <Textarea
+                    value={seoDescription}
+                    onChange={(e) => setSeoDescription(e.target.value)}
+                    placeholder="Search result description"
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+                {(seoTitle || title) && (
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Preview</p>
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
+                      {seoTitle || title}
+                    </p>
+                    <p className="text-xs text-green-700 dark:text-green-500 truncate mt-0.5">
+                      mautomate.ai/articles/{slug || "your-article-slug"}
+                    </p>
+                    {seoDescription && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {seoDescription}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </form>
     </DefaultLayout>

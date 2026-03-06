@@ -3,7 +3,7 @@ import { useQuery } from "wasp/client/operations";
 import { getChatbot, updateChatbot } from "wasp/client/operations";
 import { Button } from "../../client/components/ui/button";
 import { cn } from "../../client/utils";
-import { ChevronLeft, Check, Loader2 } from "lucide-react";
+import { ChevronLeft, Check, Loader2, Settings, Paintbrush, GraduationCap, Code2 } from "lucide-react";
 import { useToast } from "../../client/hooks/use-toast";
 import WizardStepConfigure from "./WizardStepConfigure";
 import WizardStepCustomize from "./WizardStepCustomize";
@@ -17,7 +17,12 @@ interface ChatbotWizardProps {
   onClose: () => void;
 }
 
-const STEP_LABELS = ["Configure", "Customize", "Train", "Deploy"];
+const STEPS = [
+  { num: 1, label: "Configure", icon: Settings },
+  { num: 2, label: "Customize", icon: Paintbrush },
+  { num: 3, label: "Train", icon: GraduationCap },
+  { num: 4, label: "Test & Embed", icon: Code2 },
+];
 
 export default function ChatbotWizard({ chatbotId, initialStep, onClose }: ChatbotWizardProps) {
   const { data: chatbot, isLoading } = useQuery(getChatbot, { id: chatbotId });
@@ -61,7 +66,6 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
   const handleSaveStep = async () => {
     setSaving(true);
     try {
-      // Don't send `channels` to updateChatbot — channels are managed separately
       const { channels, ...chatbotFields } = draft;
       await updateChatbot({ id: chatbotId, ...chatbotFields });
     } catch (err: any) {
@@ -81,7 +85,6 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
   };
 
   const handleStepClick = (targetStep: number) => {
-    // Allow navigating to any step (save current first)
     handleSaveStep();
     setStep(targetStep);
   };
@@ -96,45 +99,62 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
 
   return (
     <div className="bg-background fixed inset-0 z-[99999] flex flex-col">
-      {/* Sticky Header */}
-      <div className="bg-background/60 sticky top-0 z-10 border-b backdrop-blur-lg">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between px-6">
-          <Button variant="ghost" onClick={onClose} className="gap-2">
+          {/* Left: Close */}
+          <Button variant="ghost" onClick={onClose} className="gap-2 text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-4 w-4" />
-            Close
+            <span className="hidden sm:inline">Close</span>
           </Button>
 
-          <h2 className="text-lg font-semibold">{draft.title || chatbot.title}</h2>
-
-          {/* Step Navigation */}
-          <div className="flex items-center gap-2">
-            {STEP_LABELS.map((label, i) => {
-              const stepNum = i + 1;
-              const isActive = step === stepNum;
-              const isCompleted = step > stepNum;
+          {/* Center: Step Navigation */}
+          <div className="flex items-center gap-1">
+            {STEPS.map((s, i) => {
+              const isActive = step === s.num;
+              const isCompleted = step > s.num;
+              const Icon = s.icon;
               return (
                 <button
-                  key={label}
-                  onClick={() => handleStepClick(stepNum)}
+                  key={s.num}
+                  onClick={() => handleStepClick(s.num)}
+                  disabled={saving}
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                    isActive && "bg-primary text-primary-foreground",
-                    isCompleted && "bg-primary text-primary-foreground",
-                    !isActive && !isCompleted && "bg-muted text-muted-foreground"
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                    isActive && "bg-primary/10 text-primary",
+                    isCompleted && "text-primary",
+                    !isActive && !isCompleted && "text-muted-foreground hover:text-foreground"
                   )}
-                  title={label}
                 >
-                  {isCompleted ? <Check className="h-4 w-4" /> : stepNum}
+                  <span className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold border transition-colors",
+                    isActive && "bg-primary text-white border-primary",
+                    isCompleted && "bg-primary text-white border-primary",
+                    !isActive && !isCompleted && "border-muted-foreground/30 text-muted-foreground"
+                  )}>
+                    {isCompleted ? <Check className="h-3.5 w-3.5" /> : s.num}
+                  </span>
+                  <span className="hidden lg:inline">{s.label}</span>
                 </button>
               );
             })}
           </div>
+
+          {/* Right: Save indicator */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[80px] justify-end">
+            {saving && (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="text-xs">Saving...</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1 w-full bg-muted">
+        <div className="h-[3px] w-full bg-muted">
           <div
-            className="bg-primary h-full transition-all duration-300"
+            className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 ease-out"
             style={{ width: `${step * 25}%` }}
           />
         </div>
@@ -143,7 +163,7 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
       {/* Content: Two columns */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Step Form */}
-        <div className="w-[430px] shrink-0 overflow-y-auto border-r p-6">
+        <div className="w-[460px] shrink-0 overflow-y-auto border-r p-7">
           {step === 1 && (
             <WizardStepConfigure
               draft={draft}
@@ -166,41 +186,45 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
               onUpdate={updateDraft}
             />
           )}
+
+          {/* Step Navigation Buttons */}
+          <div className="mt-8 flex gap-3">
+            {step > 1 && (
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                className="flex-1 h-11 rounded-xl"
+              >
+                Back
+              </Button>
+            )}
+            {step < 4 ? (
+              <Button
+                onClick={handleNext}
+                disabled={saving}
+                className="flex-1 h-11 rounded-xl"
+              >
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Next
+              </Button>
+            ) : (
+              <Button
+                onClick={async () => { await handleSaveStep(); onClose(); }}
+                disabled={saving}
+                className="flex-1 h-11 rounded-xl"
+              >
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Finish
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Right: Live Preview */}
-        <div className="flex flex-1 items-center justify-center bg-muted/30 p-8">
-          <div className="rounded-3xl bg-muted p-5">
+        <div className="flex flex-1 items-center justify-center bg-foreground/[0.03] dark:bg-foreground/[0.02] p-8">
+          <div className="sticky bottom-8 rounded-3xl bg-foreground/[0.05] dark:bg-foreground/[0.04] p-5 backdrop-blur-sm lg:p-10">
             <ChatbotPreview draft={draft} channels={draft.channels || ["website"]} chatbotId={chatbotId} />
           </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t px-6 py-4">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={step === 1}
-          >
-            Back
-          </Button>
-          <div className="flex items-center gap-2">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            <span className="text-muted-foreground text-sm">
-              Step {step} of 4: {STEP_LABELS[step - 1]}
-            </span>
-          </div>
-          {step < 4 ? (
-            <Button onClick={handleNext} disabled={saving}>
-              Next
-            </Button>
-          ) : (
-            <Button onClick={async () => { await handleSaveStep(); onClose(); }} disabled={saving}>
-              Finish
-            </Button>
-          )}
         </div>
       </div>
     </div>
