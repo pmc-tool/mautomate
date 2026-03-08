@@ -12,6 +12,7 @@ export interface ScenePlan {
 export interface StoryPlan {
   title: string;
   musicMood: "epic" | "calm" | "mysterious" | "upbeat" | "dramatic";
+  characterDescription: string;
   scenes: ScenePlan[];
 }
 
@@ -32,6 +33,7 @@ OUTPUT FORMAT — respond with a single JSON object, no markdown:
 {
   "title": "string — a compelling, concise title for the story",
   "musicMood": "one of: epic, calm, mysterious, upbeat, dramatic — pick the mood that best fits the overall tone",
+  "characterDescription": "string — a VERY detailed, consistent physical description of the main character(s). Include: exact age, gender, ethnicity, hair color/style/length, eye color, facial features, body type, clothing/outfit in detail. This description will be prepended to every scene's visual prompt to maintain character consistency across AI-generated video scenes. Example: 'A 28-year-old East Asian woman with long straight black hair, dark brown almond-shaped eyes, fair skin, slender build, wearing a navy blue Victorian maid uniform with white lace collar and cuffs, black leather boots'",
   "scenes": [
     {
       "sceneIndex": 0,
@@ -72,7 +74,9 @@ RULES:
 
 6. TRANSITION NOTES: Each transitionNote should describe how the visual connects to the NEXT scene (e.g., "Camera pushes into the darkness, dissolving into...", "Match cut from the spinning wheel to..."). The last scene's transitionNote should describe a closing/fadeout.
 
-7. STORY STRUCTURE: Build a coherent narrative arc — opening hook, rising action, climax, resolution. Every scene should serve the story.`;
+7. STORY STRUCTURE: Build a coherent narrative arc — opening hook, rising action, climax, resolution. Every scene should serve the story.
+
+8. CHARACTER CONSISTENCY: The "characterDescription" field is CRITICAL. It must contain an extremely detailed, fixed physical description of the main character(s) that will be automatically prepended to every scene's visual prompt. Be specific about: exact age, gender, ethnicity/skin tone, hair (color, style, length), eye color, facial features (nose shape, jawline), body type, and EXACT clothing/outfit details. Do NOT change the character's appearance between scenes. The same person must be recognizable across all scenes.`;
 
   if (referenceImageDescription) {
     prompt += `
@@ -101,6 +105,14 @@ function validateAndFixStoryPlan(raw: unknown, targetDuration: number): StoryPla
   if (!VALID_MUSIC_MOODS.includes(obj.musicMood as typeof VALID_MUSIC_MOODS[number])) {
     console.warn(`[storyPlanner] Invalid musicMood "${obj.musicMood}", defaulting to "dramatic"`);
     obj.musicMood = "dramatic";
+  }
+
+  // Extract character description
+  const characterDescription = typeof obj.characterDescription === "string"
+    ? obj.characterDescription.trim()
+    : "";
+  if (!characterDescription) {
+    console.warn("[storyPlanner] No characterDescription in response, character consistency may suffer");
   }
 
   // Validate scenes array
@@ -184,6 +196,14 @@ function validateAndFixStoryPlan(raw: unknown, targetDuration: number): StoryPla
     }
   }
 
+  // Prepend character description to every visual prompt for consistency
+  if (characterDescription) {
+    for (const scene of scenes) {
+      scene.visualPrompt = `[Character: ${characterDescription}] ${scene.visualPrompt}`;
+    }
+    console.log(`[storyPlanner] Prepended character description (${characterDescription.length} chars) to all ${scenes.length} visual prompts`);
+  }
+
   // Enforce narration word counts — max ~2.5 words/sec per scene duration
   for (const scene of scenes) {
     const maxWords = Math.ceil(scene.duration * 2.5);
@@ -203,6 +223,7 @@ function validateAndFixStoryPlan(raw: unknown, targetDuration: number): StoryPla
   return {
     title: (obj.title as string).trim(),
     musicMood: obj.musicMood as StoryPlan["musicMood"],
+    characterDescription,
     scenes,
   };
 }

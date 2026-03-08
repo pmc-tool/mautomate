@@ -22,6 +22,7 @@ import {
 import {
   stitchStoryVideo as runStitch,
   cleanupTempDir,
+  extractReferenceFrame,
 } from "./stitchingService";
 import { STORY_VIDEOS_DIR } from "../../server/setup";
 import fsPromises from "fs/promises";
@@ -160,19 +161,24 @@ export const generateStoryPlan = async (
       await context.entities.StoryScene.create({ data });
     }
 
-    // Update project with plan results
+    // Update project with plan results + character description
+    const existingMetadata = (project.metadata as any) || {};
     const updated = await context.entities.StoryProject.update({
       where: { id: args.projectId },
       data: {
         title: plan.title,
         musicMood: plan.musicMood,
         status: "planned",
+        metadata: {
+          ...existingMetadata,
+          characterDescription: plan.characterDescription || "",
+        },
       },
       include: { scenes: { orderBy: { sceneIndex: "asc" } } },
     });
 
     console.log(
-      `${LOG} Story plan generated for project ${args.projectId}: "${plan.title}" — ${plan.scenes.length} scenes`
+      `${LOG} Story plan generated for project ${args.projectId}: "${plan.title}" — ${plan.scenes.length} scenes, character: ${(plan.characterDescription || "none").substring(0, 80)}`
     );
 
     return updated;
@@ -827,6 +833,24 @@ export const checkStoryStatus = async (
           `${LOG} Scene ${scene.id} (index ${scene.sceneIndex}) completed`
         );
 
+        // Extract reference frame from scene 0 for character consistency
+        if (scene.sceneIndex === 0 && result.videoUrl && !project.referenceImageUrl) {
+          try {
+            const refImagePath = path.join(STORY_VIDEOS_DIR, `${args.projectId}.jpg`);
+            await fsPromises.mkdir(STORY_VIDEOS_DIR, { recursive: true });
+            await extractReferenceFrame(result.videoUrl, refImagePath, 2);
+            const refImageUrl = `/api/story-video/${args.projectId}.jpg`;
+            await context.entities.StoryProject.update({
+              where: { id: args.projectId },
+              data: { referenceImageUrl: refImageUrl },
+            });
+            project.referenceImageUrl = refImageUrl;
+            console.log(`${LOG} Reference frame extracted for project ${args.projectId}: ${refImageUrl}`);
+          } catch (refErr: any) {
+            console.warn(`${LOG} Failed to extract reference frame (will use T2V): ${refErr.message}`);
+          }
+        }
+
         // Submit next scene if available
         const nextScene = project.scenes.find(
           (s: any) => s.sceneIndex === scene.sceneIndex + 1 && s.status === "pending"
@@ -834,13 +858,39 @@ export const checkStoryStatus = async (
 
         if (nextScene) {
           let nextSubmitResult;
-          // Use T2V for chaining (I2V requires image URL, not video URL)
-          nextSubmitResult = await submitT2V(novitaApiKey, {
-            prompt: nextScene.visualPrompt,
-            duration: nextScene.duration as 5 | 10 | 15,
-            size,
-            shot_type: nextScene.shotType,
-          });
+
+          // Use I2V with reference image for character consistency (scenes 1+)
+          const publicRefUrl = project.referenceImageUrl
+            ? `https://mautomate.ai${project.referenceImageUrl}`
+            : null;
+
+          if (publicRefUrl) {
+            try {
+              console.log(`${LOG} Using I2V with reference image for scene ${nextScene.sceneIndex}`);
+              nextSubmitResult = await submitI2V(novitaApiKey, {
+                prompt: nextScene.visualPrompt,
+                duration: nextScene.duration as 5 | 10 | 15,
+                size,
+                shot_type: nextScene.shotType,
+                image_url: publicRefUrl,
+              });
+            } catch (i2vErr: any) {
+              console.warn(`${LOG} I2V failed, falling back to T2V: ${i2vErr.message}`);
+              nextSubmitResult = await submitT2V(novitaApiKey, {
+                prompt: nextScene.visualPrompt,
+                duration: nextScene.duration as 5 | 10 | 15,
+                size,
+                shot_type: nextScene.shotType,
+              });
+            }
+          } else {
+            nextSubmitResult = await submitT2V(novitaApiKey, {
+              prompt: nextScene.visualPrompt,
+              duration: nextScene.duration as 5 | 10 | 15,
+              size,
+              shot_type: nextScene.shotType,
+            });
+          }
 
           await context.entities.StoryScene.update({
             where: { id: nextScene.id },

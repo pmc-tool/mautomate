@@ -37,6 +37,28 @@ export const serverSetup = (context: { app: Application }) => {
   const widgetMiddleware = (req: any, res: any, next: any) => {
     const reqPath: string = req.path || '';
 
+    // Serve reference frame images: /api/story-video/:projectId.jpg
+    const storyImageMatch = reqPath.match(/^\/api\/story-video\/([a-zA-Z0-9_-]+)\.jpg$/);
+    if (storyImageMatch) {
+      const projectId = storyImageMatch[1];
+      const imgPath = path.join(STORY_VIDEOS_DIR, `${projectId}.jpg`);
+      try {
+        if (fs.existsSync(imgPath)) {
+          const stat = fs.statSync(imgPath);
+          res.setHeader('Content-Type', 'image/jpeg');
+          res.setHeader('Content-Length', stat.size);
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.status(200);
+          fs.createReadStream(imgPath).pipe(res);
+          return;
+        }
+      } catch (err) {
+        console.error(`[serverSetup] Error serving reference image: ${err}`);
+      }
+      res.status(404).json({ error: 'Image not found' });
+      return;
+    }
+
     // Serve stitched story videos: /api/story-video/:projectId.mp4
     const storyVideoMatch = reqPath.match(/^\/api\/story-video\/([a-zA-Z0-9_-]+)\.mp4$/);
     if (storyVideoMatch) {

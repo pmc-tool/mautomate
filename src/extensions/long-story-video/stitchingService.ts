@@ -153,6 +153,37 @@ function getTargetSize(resolution: "720p" | "1080p"): { w: number; h: number } {
   return resolution === "1080p" ? { w: 1920, h: 1080 } : { w: 1280, h: 720 };
 }
 
+// ── Extract a reference frame from a video URL ──────────────────────────
+// Downloads video and extracts a single frame at the given timestamp.
+// Used to create a character reference image for I2V consistency.
+
+export async function extractReferenceFrame(
+  videoUrl: string,
+  outputPath: string,
+  timestampSec: number = 2
+): Promise<void> {
+  const tmpDir = path.join(os.tmpdir(), `ref-frame-${Date.now()}`);
+  await fs.mkdir(tmpDir, { recursive: true });
+  const tmpVideo = path.join(tmpDir, "ref_video.mp4");
+
+  try {
+    await downloadFile(videoUrl, tmpVideo);
+
+    await execFileAsync("ffmpeg", [
+      "-y",
+      "-ss", String(timestampSec),
+      "-i", tmpVideo,
+      "-vframes", "1",
+      "-q:v", "2",
+      outputPath,
+    ], { timeout: 30_000 });
+
+    console.log(`${LOG_PREFIX} Reference frame extracted: ${outputPath}`);
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 // ── Main stitching function ─────────────────────────────────────────────────
 
 export async function stitchStoryVideo(

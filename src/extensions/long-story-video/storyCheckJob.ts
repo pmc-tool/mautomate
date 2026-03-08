@@ -13,6 +13,10 @@ import {
 import { CreditActionType } from "../../credits/creditConfig";
 import { refundCredits } from "../../credits/creditService";
 import { generateAllNarrations, isValidVoiceId } from "./ttsService";
+import { extractReferenceFrame } from "./stitchingService";
+import { STORY_VIDEOS_DIR } from "../../server/setup";
+import fsPromises from "fs/promises";
+import path from "path";
 
 const LOG = "[storyCheckJob]";
 const SCENE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
@@ -197,6 +201,24 @@ export const storyStatusCheck = async (_args: any, context: any) => {
             `${LOG} Scene ${scene.id} (project ${projectId}, index ${scene.sceneIndex}) completed`
           );
 
+          // Extract reference frame from scene 0 for character consistency
+          if (scene.sceneIndex === 0 && result.videoUrl && !project.referenceImageUrl) {
+            try {
+              const refImagePath = path.join(STORY_VIDEOS_DIR, `${projectId}.jpg`);
+              await fsPromises.mkdir(STORY_VIDEOS_DIR, { recursive: true });
+              await extractReferenceFrame(result.videoUrl, refImagePath, 2);
+              const refImageUrl = `/api/story-video/${projectId}.jpg`;
+              await context.entities.StoryProject.update({
+                where: { id: projectId },
+                data: { referenceImageUrl: refImageUrl },
+              });
+              project.referenceImageUrl = refImageUrl;
+              console.log(`${LOG} Reference frame extracted for project ${projectId}`);
+            } catch (refErr: any) {
+              console.warn(`${LOG} Failed to extract reference frame: ${refErr.message}`);
+            }
+          }
+
           // Find and submit next pending scene
           const nextScene = await context.entities.StoryScene.findFirst({
             where: {
@@ -209,13 +231,38 @@ export const storyStatusCheck = async (_args: any, context: any) => {
           if (nextScene) {
             let submitResult;
             try {
-              // Use T2V for scene chaining (I2V requires image, not video URL)
-              submitResult = await submitT2V(novitaApiKey, {
-                prompt: nextScene.visualPrompt,
-                duration: nextScene.duration as 5 | 10 | 15,
-                size,
-                shot_type: nextScene.shotType,
-              });
+              // Use I2V with reference image for character consistency
+              const publicRefUrl = project.referenceImageUrl
+                ? `https://mautomate.ai${project.referenceImageUrl}`
+                : null;
+
+              if (publicRefUrl) {
+                try {
+                  console.log(`${LOG} Using I2V for scene ${nextScene.sceneIndex} with reference image`);
+                  submitResult = await submitI2V(novitaApiKey, {
+                    prompt: nextScene.visualPrompt,
+                    duration: nextScene.duration as 5 | 10 | 15,
+                    size,
+                    shot_type: nextScene.shotType,
+                    image_url: publicRefUrl,
+                  });
+                } catch (i2vErr: any) {
+                  console.warn(`${LOG} I2V failed, falling back to T2V: ${i2vErr.message}`);
+                  submitResult = await submitT2V(novitaApiKey, {
+                    prompt: nextScene.visualPrompt,
+                    duration: nextScene.duration as 5 | 10 | 15,
+                    size,
+                    shot_type: nextScene.shotType,
+                  });
+                }
+              } else {
+                submitResult = await submitT2V(novitaApiKey, {
+                  prompt: nextScene.visualPrompt,
+                  duration: nextScene.duration as 5 | 10 | 15,
+                  size,
+                  shot_type: nextScene.shotType,
+                });
+              }
 
               await context.entities.StoryScene.update({
                 where: { id: nextScene.id },
