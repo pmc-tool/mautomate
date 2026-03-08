@@ -4,6 +4,7 @@ import {
   Columns3,
   DollarSign,
   FileUp,
+  Film,
   Gift,
   ImagePlus,
   Inbox,
@@ -34,6 +35,7 @@ const EXTENSION_ICON_MAP: Record<string, LucideIcon> = {
   Search: Search,
   Inbox: Inbox,
   Video: Video,
+  Film: Film,
 };
 
 interface UserSidebarProps {

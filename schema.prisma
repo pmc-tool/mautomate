@@ -64,6 +64,9 @@ model User {
   videoProjects             VideoProject[]
   videoGenerations          VideoGeneration[]
 
+  storyProjects             StoryProject[]
+  storyScenes               StoryScene[]
+
   // Affiliate system
   affiliateLink             AffiliateLink?
   affiliateConversion       AffiliateConversion? @relation("affiliateConvertedUser")
@@ -751,6 +754,59 @@ model VideoGeneration {
   errorMessage    String?
   creditsCost     Int       @default(0)
   metadata        Json?                         // extra model-specific params
+}
+
+// ---------------------------------------------------------------------------
+// Long Story Video
+// ---------------------------------------------------------------------------
+
+model StoryProject {
+  id                String        @id @default(uuid())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  user              User          @relation(fields: [userId], references: [id])
+  userId            String
+  title             String
+  prompt            String
+  targetDuration    Int           @default(60)
+  resolution        String        @default("720p")
+  voiceId           String?
+  musicTrackId      String?
+  musicMood         String?
+  status            String        @default("draft")
+  progress          Int           @default(0)
+  finalVideoUrl     String?
+  thumbnailUrl      String?
+  totalCredits      Int           @default(0)
+  errorMessage      String?
+  metadata          Json?
+  referenceImageUrl String?
+  scenes            StoryScene[]
+}
+
+model StoryScene {
+  id              String       @id @default(uuid())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  project         StoryProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  sceneIndex      Int
+  visualPrompt    String
+  narrationText   String
+  duration        Int          @default(5)
+  shotType        String       @default("single")
+  transitionNote  String?
+  status          String       @default("pending")
+  progress        Int          @default(0)
+  taskId          String?
+  videoUrl        String?
+  narrationUrl    String?
+  inputImageUrl   String?
+  thumbnailUrl    String?
+  errorMessage    String?
+  retryCount      Int          @default(0)
+  creditsCost     Int          @default(0)
+  metadata        Json?
 }
 
 model InboxCannedResponse {

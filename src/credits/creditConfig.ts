@@ -18,6 +18,10 @@ export enum CreditActionType {
   VideoBasic = "video_basic",
   VideoStandard = "video_standard",
   VideoPremium = "video_premium",
+  StoryPlan = "story_plan",
+  StoryBasic = "story_basic",
+  StoryStandard = "story_standard",
+  StorySceneRegen = "story_scene_regen",
 }
 
 // ---------------------------------------------------------------------------
@@ -40,6 +44,10 @@ export const CREDIT_COSTS: Record<CreditActionType, number> = {
   [CreditActionType.VideoBasic]: 15,
   [CreditActionType.VideoStandard]: 30,
   [CreditActionType.VideoPremium]: 60,
+  [CreditActionType.StoryPlan]: 10,
+  [CreditActionType.StoryBasic]: 150,
+  [CreditActionType.StoryStandard]: 300,
+  [CreditActionType.StorySceneRegen]: 30,
 };
 
 // ---------------------------------------------------------------------------
@@ -96,4 +104,8 @@ export const ACTION_LABELS: Record<CreditActionType, string> = {
   [CreditActionType.VideoBasic]: "Video generation (budget)",
   [CreditActionType.VideoStandard]: "Video generation (standard)",
   [CreditActionType.VideoPremium]: "Video generation (premium)",
+  [CreditActionType.StoryPlan]: "Story video planning",
+  [CreditActionType.StoryBasic]: "Story video (~1 min)",
+  [CreditActionType.StoryStandard]: "Story video (~2 min)",
+  [CreditActionType.StorySceneRegen]: "Story scene regeneration",
 };

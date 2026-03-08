@@ -1375,6 +1375,106 @@ job videoStatusCheck {
 //#endregion
 
 // ---------------------------------------------------------------------------
+//#region Long Story Video Extension
+// ---------------------------------------------------------------------------
+
+route LongStoryRoute { path: "/long-story", to: LongStoryPage }
+page LongStoryPage {
+  authRequired: true,
+  component: import LongStoryPage from "@src/extensions/long-story-video/LongStoryPage"
+}
+
+route StoryCreateRoute { path: "/long-story/create", to: StoryCreatePage }
+page StoryCreatePage {
+  authRequired: true,
+  component: import StoryCreatePage from "@src/extensions/long-story-video/StoryCreatePage"
+}
+
+route StoryEditorRoute { path: "/long-story/project/:id", to: StoryEditorPage }
+page StoryEditorPage {
+  authRequired: true,
+  component: import StoryEditorPage from "@src/extensions/long-story-video/StoryEditorPage"
+}
+
+route StoryGalleryRoute { path: "/long-story/gallery", to: StoryGalleryPage }
+page StoryGalleryPage {
+  authRequired: true,
+  component: import StoryGalleryPage from "@src/extensions/long-story-video/StoryGalleryPage"
+}
+
+// Queries
+query getStoryProjects {
+  fn: import { getStoryProjects } from "@src/extensions/long-story-video/operations",
+  entities: [StoryProject, StoryScene, UserExtension]
+}
+
+query getStoryProject {
+  fn: import { getStoryProject } from "@src/extensions/long-story-video/operations",
+  entities: [StoryProject, StoryScene, UserExtension]
+}
+
+// Actions: Project CRUD
+action createStoryProject {
+  fn: import { createStoryProject } from "@src/extensions/long-story-video/operations",
+  entities: [StoryProject, UserExtension]
+}
+
+action deleteStoryProject {
+  fn: import { deleteStoryProject } from "@src/extensions/long-story-video/operations",
+  entities: [StoryProject, StoryScene, UserExtension]
+}
+
+// Actions: Story Planning & Generation
+action generateStoryPlan {
+  fn: import { generateStoryPlan } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting, User, CreditTransaction]
+}
+
+action updateStoryPlan {
+  fn: import { updateStoryPlan } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension]
+}
+
+action startStoryGeneration {
+  fn: import { startStoryGeneration } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting, User, CreditTransaction]
+}
+
+action regenerateScene {
+  fn: import { regenerateScene } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting, User, CreditTransaction]
+}
+
+action generateNarration {
+  fn: import { generateNarration } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting, User, CreditTransaction]
+}
+
+action stitchStoryVideo {
+  fn: import { stitchStoryVideo } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting]
+}
+
+action checkStoryStatus {
+  fn: import { checkStoryStatus } from "@src/extensions/long-story-video/generationOperations",
+  entities: [StoryProject, StoryScene, UserExtension, Setting]
+}
+
+// Job: Poll Novita for processing story scenes
+job storyStatusCheck {
+  executor: PgBoss,
+  perform: {
+    fn: import { storyStatusCheck } from "@src/extensions/long-story-video/storyCheckJob"
+  },
+  schedule: {
+    cron: "* * * * *"
+  },
+  entities: [StoryProject, StoryScene, Setting, User, CreditTransaction]
+}
+
+//#endregion
+
+// ---------------------------------------------------------------------------
 //#region Affiliate System
 // ---------------------------------------------------------------------------
 

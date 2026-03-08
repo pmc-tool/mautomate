@@ -61,6 +61,22 @@ export const EXTENSION_REGISTRY: ExtensionDefinition[] = [
     isEnabled: true,
   },
   {
+    id: "long-story-video",
+    name: "Long Story Video",
+    description: "Create 1-2 minute narrated story videos from a single prompt — AI scenes, voice, music & subtitles.",
+    icon: "Film",
+    category: "ai",
+    route: "/long-story",
+    settingsKeys: [
+      "ext.long-story-video.novita_api_key",
+      "ext.long-story-video.price",
+      "ext.long-story-video.stripe_price_id",
+    ],
+    isFree: false,
+    defaultPrice: 20,
+    isEnabled: true,
+  },
+  {
     id: "central-inbox",
     name: "Central Inbox",
     description: "Unified inbox for AI + human agent conversations across website, WhatsApp, Telegram, Messenger, and Instagram.",
