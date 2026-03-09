@@ -105,11 +105,28 @@ function getTimeAgo(date: string): string {
 }
 
 // ── Thumbnail helper ───────────────────────────────────────────────────────
-// Uses referenceImageUrl (extracted frame from scene 0) as thumbnail
 
-function getThumbnail(project: any): string | null {
-  if (project.referenceImageUrl) return project.referenceImageUrl;
-  // Fallback: check if first scene has a video URL (we could generate thumbnail later)
+interface Thumbnail {
+  url: string;
+  type: "image" | "video";
+}
+
+function getThumbnail(project: any): Thumbnail | null {
+  // 1. Extracted reference frame (best — actual jpg)
+  if (project.referenceImageUrl) {
+    return { url: project.referenceImageUrl, type: "image" };
+  }
+  // 2. Final stitched video
+  if (project.finalVideoUrl) {
+    return { url: project.finalVideoUrl, type: "video" };
+  }
+  // 3. First completed scene's video
+  const firstScene = project.scenes
+    ?.sort((a: any, b: any) => a.sceneIndex - b.sceneIndex)
+    ?.find((s: any) => s.videoUrl);
+  if (firstScene?.videoUrl) {
+    return { url: firstScene.videoUrl, type: "video" };
+  }
   return null;
 }
 
@@ -324,8 +341,10 @@ function ActiveProjectCard({ project }: { project: any }) {
       <div className="group flex items-center gap-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 transition-all hover:border-blue-500/40 hover:shadow-md">
         {/* Thumbnail or placeholder */}
         <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-muted">
-          {thumbnail ? (
-            <img src={thumbnail} alt="" className="h-full w-full object-cover" />
+          {thumbnail?.type === "image" ? (
+            <img src={thumbnail.url} alt="" className="h-full w-full object-cover" />
+          ) : thumbnail?.type === "video" ? (
+            <video src={thumbnail.url} muted preload="metadata" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <Film className="h-6 w-6 text-muted-foreground/40" />
@@ -376,10 +395,17 @@ function StoryCard({ project }: { project: any }) {
       <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/20 hover:shadow-lg">
         {/* Thumbnail area */}
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          {thumbnail ? (
+          {thumbnail?.type === "image" ? (
             <img
-              src={thumbnail}
+              src={thumbnail.url}
               alt={project.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : thumbnail?.type === "video" ? (
+            <video
+              src={thumbnail.url}
+              muted
+              preload="metadata"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (

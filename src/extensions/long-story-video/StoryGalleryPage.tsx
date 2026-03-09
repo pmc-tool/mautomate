@@ -121,6 +121,21 @@ function getTimeAgo(date: string): string {
   return new Date(date).toLocaleDateString();
 }
 
+interface Thumbnail {
+  url: string;
+  type: "image" | "video";
+}
+
+function getThumbnail(project: any): Thumbnail | null {
+  if (project.referenceImageUrl) return { url: project.referenceImageUrl, type: "image" };
+  if (project.finalVideoUrl) return { url: project.finalVideoUrl, type: "video" };
+  const firstScene = project.scenes
+    ?.sort((a: any, b: any) => a.sceneIndex - b.sceneIndex)
+    ?.find((s: any) => s.videoUrl);
+  if (firstScene?.videoUrl) return { url: firstScene.videoUrl, type: "video" };
+  return null;
+}
+
 const EMPTY_MESSAGES: Record<FilterTab, string> = {
   all: "No stories yet. Create your first one!",
   completed: "No completed stories yet.",
@@ -225,7 +240,7 @@ function GalleryCard({ project }: { project: any }) {
   const isActive = IN_PROGRESS_STATUSES.includes(project.status);
   const isCompleted = project.status === "completed";
   const isFailed = project.status === "failed";
-  const thumbnail = project.referenceImageUrl || null;
+  const thumbnail = getThumbnail(project);
 
   const linkTarget =
     ["draft", "planned"].includes(project.status)
@@ -237,10 +252,17 @@ function GalleryCard({ project }: { project: any }) {
       <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/20 hover:shadow-lg">
         {/* Thumbnail */}
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          {thumbnail ? (
+          {thumbnail?.type === "image" ? (
             <img
-              src={thumbnail}
+              src={thumbnail.url}
               alt={project.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : thumbnail?.type === "video" ? (
+            <video
+              src={thumbnail.url}
+              muted
+              preload="metadata"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
