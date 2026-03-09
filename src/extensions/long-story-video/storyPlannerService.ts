@@ -11,12 +11,12 @@ export interface ScenePlan {
 
 export interface StoryPlan {
   title: string;
-  musicMood: "epic" | "calm" | "mysterious" | "upbeat" | "dramatic";
+  musicMood: "epic" | "calm" | "mysterious" | "upbeat" | "dramatic" | "romantic" | "adventure" | "sad" | "fantasy" | "inspirational";
   characterDescription: string;
   scenes: ScenePlan[];
 }
 
-const VALID_MUSIC_MOODS = ["epic", "calm", "mysterious", "upbeat", "dramatic"] as const;
+const VALID_MUSIC_MOODS = ["epic", "calm", "mysterious", "upbeat", "dramatic", "romantic", "adventure", "sad", "fantasy", "inspirational"] as const;
 const VALID_DURATIONS = [5, 10, 15] as const;
 const VALID_SHOT_TYPES = ["single", "multi"] as const;
 
@@ -32,7 +32,7 @@ function buildSystemPrompt(
 OUTPUT FORMAT — respond with a single JSON object, no markdown:
 {
   "title": "string — a compelling, concise title for the story",
-  "musicMood": "one of: epic, calm, mysterious, upbeat, dramatic — pick the mood that best fits the overall tone",
+  "musicMood": "one of: epic, calm, mysterious, upbeat, dramatic, romantic, adventure, sad, fantasy, inspirational — pick the mood that best fits the overall tone",
   "characterDescription": "string — a VERY detailed, consistent physical description of the main character(s). Include: exact age, gender, ethnicity, hair color/style/length, eye color, facial features, body type, clothing/outfit in detail. This description will be prepended to every scene's visual prompt to maintain character consistency across AI-generated video scenes. Example: 'A 28-year-old East Asian woman with long straight black hair, dark brown almond-shaped eyes, fair skin, slender build, wearing a navy blue Victorian maid uniform with white lace collar and cuffs, black leather boots'",
   "scenes": [
     {

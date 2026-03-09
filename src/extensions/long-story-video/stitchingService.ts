@@ -11,6 +11,7 @@ import http from "http";
 
 import fsSync from "fs";
 import { generateSRT, type SceneTimingInput } from "./subtitleService";
+import { getTrackById, getRandomTrackForMood, type MusicMood } from "./musicLibrary";
 
 const execFileAsync = promisify(execFile);
 
@@ -369,35 +370,49 @@ export async function stitchStoryVideo(
 
     console.log(`${LOG_PREFIX} Adding background music...`);
 
-    // Generate ambient music via sine waves
+    // Resolve the music track: explicit ID > mood-based random > default "calm"
+    let musicTrack;
+    if (musicTrackId) {
+      musicTrack = getTrackById(musicTrackId);
+      if (!musicTrack) {
+        console.warn(`${LOG_PREFIX} Track ID "${musicTrackId}" not found, falling back to calm mood`);
+        musicTrack = getRandomTrackForMood("calm");
+      }
+    } else {
+      const mood = (musicMood as MusicMood) || "calm";
+      musicTrack = getRandomTrackForMood(mood);
+    }
+
+    console.log(`${LOG_PREFIX} Using music track: ${musicTrack.name} (${musicTrack.id})`);
+
+    // Download the music file
+    const musicRawPath = path.join(workDir, "music_raw.mp3");
+    await downloadFile(musicTrack.url, musicRawPath);
+
+    // Process music: loop if needed, trim to total duration, add fade-in/fade-out
     const trimDur = totalDuration.toFixed(3);
     const fadeOutStart = Math.max(0, totalDuration - 3).toFixed(3);
     await runFFmpeg(
       [
         "-y",
-        "-f", "lavfi",
-        "-i", `sine=frequency=174:duration=${trimDur}`,
-        "-f", "lavfi",
-        "-i", `sine=frequency=220:duration=${trimDur}`,
-        "-f", "lavfi",
-        "-i", `sine=frequency=261:duration=${trimDur}`,
-        "-filter_complex",
-        `[0:a]volume=0.3[a];[1:a]volume=0.2[b];[2:a]volume=0.15[c];[a][b][c]amix=inputs=3:duration=first,lowpass=f=800,afade=t=in:d=2,afade=t=out:st=${fadeOutStart}:d=3[music]`,
-        "-map", "[music]",
+        "-stream_loop", "-1",
+        "-i", "music_raw.mp3",
+        "-t", trimDur,
+        "-af", `afade=t=in:d=2,afade=t=out:st=${fadeOutStart}:d=3`,
         "-c:a", "pcm_s16le",
-        "ambient.wav",
+        "music_processed.wav",
       ],
       workDir
     );
 
-    // Mix: keep the existing narration audio from concatenated.mp4, add ambient music at low volume
+    // Mix: narration at full volume, background music at 0.15
     await runFFmpeg(
       [
         "-y",
         "-i", "concatenated.mp4",
-        "-i", "ambient.wav",
+        "-i", "music_processed.wav",
         "-filter_complex",
-        `[0:a]volume=1.0[voice];[1:a]volume=0.12[bg];[voice][bg]amix=inputs=2:duration=first[audio]`,
+        `[0:a]volume=1.0[voice];[1:a]volume=0.15[bg];[voice][bg]amix=inputs=2:duration=first[audio]`,
         "-map", "0:v",
         "-map", "[audio]",
         "-c:v", "copy",

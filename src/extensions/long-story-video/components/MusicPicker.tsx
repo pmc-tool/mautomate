@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { MUSIC_TRACKS, getAllMoods, getTracksByMood, type MusicMood } from "../musicLibrary";
-import { Music, Clock } from "lucide-react";
+import { getAllMoods, getTracksByMood, type MusicMood } from "../musicLibrary";
+import { Music } from "lucide-react";
 
 interface MusicPickerProps {
   selectedTrackId: string | null;
@@ -13,6 +13,11 @@ const MOOD_LABELS: Record<MusicMood, string> = {
   mysterious: "Mysterious",
   upbeat: "Upbeat",
   dramatic: "Dramatic",
+  romantic: "Romantic",
+  adventure: "Adventure",
+  sad: "Sad",
+  fantasy: "Fantasy",
+  inspirational: "Inspirational",
 };
 
 export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
@@ -48,8 +53,6 @@ export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
       <div className="space-y-2">
         {tracks.map((track) => {
           const isSelected = selectedTrackId === track.id;
-          const minutes = Math.floor(track.durationSec / 60);
-          const seconds = track.durationSec % 60;
 
           return (
             <button
@@ -73,13 +76,6 @@ export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
                 <div className="font-medium text-white">{track.name}</div>
                 <div className="truncate text-xs text-gray-400">{track.description}</div>
               </div>
-              <div className="flex shrink-0 items-center gap-1 text-xs text-gray-500">
-                <Clock className="h-3 w-3" />
-                {minutes}:{seconds.toString().padStart(2, "0")}
-              </div>
-              {track.bpm && (
-                <span className="shrink-0 text-xs text-gray-600">{track.bpm} bpm</span>
-              )}
             </button>
           );
         })}
