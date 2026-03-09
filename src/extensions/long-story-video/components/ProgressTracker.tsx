@@ -28,52 +28,93 @@ export function ProgressTracker({ scenes, projectStatus }: ProgressTrackerProps)
   const generatingScene = scenes.find((s) => s.status === "generating");
   const failedCount = scenes.filter((s) => s.status === "failed").length;
   const totalCount = scenes.length;
-  const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // Calculate real overall progress using per-scene progress
+  const totalProgress = scenes.reduce((sum, s) => sum + (s.progress || 0), 0);
+  const overallProgress = totalCount > 0 ? Math.round(totalProgress / totalCount) : 0;
 
   let statusText = "";
+  let detailText = "";
+
   if (projectStatus === "generating") {
-    statusText = generatingScene
-      ? `Scene ${generatingScene.sceneIndex + 1}/${totalCount} generating...`
-      : `Generating scenes... ${completedCount}/${totalCount} done`;
+    if (generatingScene) {
+      const sceneProgress = generatingScene.progress || 0;
+      statusText = `Scene ${generatingScene.sceneIndex + 1}/${totalCount} generating — ${sceneProgress}%`;
+      detailText = `${completedCount} completed, ${totalCount - completedCount - failedCount} remaining`;
+    } else {
+      statusText = `${completedCount}/${totalCount} scenes done`;
+    }
   } else if (projectStatus === "narrating") {
-    statusText = "Generating narration audio...";
+    const narrated = scenes.filter((s: any) => s.narrationUrl).length;
+    statusText = narrated > 0
+      ? `Generating voice narration — ${narrated}/${totalCount} done`
+      : "Generating voice narration...";
   } else if (projectStatus === "stitching") {
-    statusText = "Stitching final video...";
+    statusText = "Stitching final video — encoding...";
+  } else if (projectStatus === "narrated") {
+    statusText = "Narration complete — ready to finalize";
+  } else if (projectStatus === "generated") {
+    statusText = "Scenes generated — ready for narration";
   } else if (projectStatus === "completed") {
     statusText = `All ${totalCount} scenes completed`;
   } else if (projectStatus === "failed") {
     statusText = `${failedCount} scene${failedCount !== 1 ? "s" : ""} failed`;
   }
 
+  // Progress bar value depends on status
+  let barProgress = overallProgress;
+  if (projectStatus === "narrating") barProgress = Math.max(overallProgress, 50);
+  if (projectStatus === "narrated") barProgress = 75;
+  if (projectStatus === "stitching") barProgress = 90;
+  if (projectStatus === "completed") barProgress = 100;
+
   return (
     <div className="space-y-2">
       {/* Progress bar */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-700">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${
-            projectStatus === "completed"
-              ? "bg-green-500"
-              : projectStatus === "failed"
-              ? "bg-red-500"
-              : "bg-blue-500"
-          }`}
-          style={{ width: `${overallProgress}%` }}
-        />
+      <div className="flex items-center gap-3">
+        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-700">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              projectStatus === "completed"
+                ? "bg-green-500"
+                : projectStatus === "failed"
+                ? "bg-red-500"
+                : "bg-blue-500"
+            }`}
+            style={{ width: `${barProgress}%` }}
+          />
+        </div>
+        <span className="min-w-[3rem] text-right text-sm font-medium text-gray-300">
+          {barProgress}%
+        </span>
       </div>
 
-      {/* Scene dots */}
-      <div className="flex items-center gap-1.5">
+      {/* Scene dots with individual progress */}
+      <div className="flex items-center gap-2">
         {scenes.map((scene) => (
-          <div
-            key={scene.id}
-            title={`Scene ${scene.sceneIndex + 1}: ${scene.status}`}
-            className={`h-3 w-3 rounded-full ${getStatusColor(scene.status)}`}
-          />
+          <div key={scene.id} className="flex flex-col items-center gap-0.5">
+            <div
+              title={`Scene ${scene.sceneIndex + 1}: ${scene.status}${scene.status === "generating" ? ` (${scene.progress || 0}%)` : ""}`}
+              className={`h-3.5 w-3.5 rounded-full ${getStatusColor(scene.status)} flex items-center justify-center`}
+            >
+              {scene.status === "completed" && (
+                <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            {scene.status === "generating" && (
+              <span className="text-[10px] text-blue-400">{scene.progress || 0}%</span>
+            )}
+          </div>
         ))}
       </div>
 
       {/* Status text */}
-      {statusText && <p className="text-sm text-gray-400">{statusText}</p>}
+      <div>
+        {statusText && <p className="text-sm text-gray-300">{statusText}</p>}
+        {detailText && <p className="text-xs text-gray-500">{detailText}</p>}
+      </div>
     </div>
   );
 }

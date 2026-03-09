@@ -18,6 +18,7 @@ import {
   submitI2V,
   checkStatus,
   resolutionToSize,
+  setVideoModel,
 } from "./novitaVideoClient";
 import {
   stitchStoryVideo as runStitch,
@@ -352,6 +353,14 @@ export const startStoryGeneration = async (
     context.entities.Setting,
     "ext.long-story-video.novita_api_key"
   );
+
+  // Load video model setting (default: wan2.1 for cost savings)
+  try {
+    const modelSetting = await context.entities.Setting.findUnique({
+      where: { key: "ext.long-story-video.video_model" },
+    });
+    if (modelSetting?.value) setVideoModel(modelSetting.value);
+  } catch {}
 
   // Deduct credits upfront
   console.log(`${LOG} startStoryGeneration: deducting credits for user ${context.user.id}, action=${creditAction}, sceneCount=${sceneCount}`);
@@ -756,6 +765,14 @@ export const checkStoryStatus = async (
     context.entities.Setting,
     "ext.long-story-video.novita_api_key"
   );
+
+  // Load video model setting
+  try {
+    const modelSetting = await context.entities.Setting.findUnique({
+      where: { key: "ext.long-story-video.video_model" },
+    });
+    if (modelSetting?.value) setVideoModel(modelSetting.value);
+  } catch {}
 
   const size = resolutionToSize(
     (project.resolution || "720p") as "720p" | "1080p",

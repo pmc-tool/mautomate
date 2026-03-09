@@ -9,6 +9,7 @@ import {
   submitI2V,
   submitT2V,
   resolutionToSize,
+  setVideoModel,
 } from "./novitaVideoClient";
 import { CreditActionType } from "../../credits/creditConfig";
 import { refundCredits } from "../../credits/creditService";
@@ -145,6 +146,14 @@ export const storyStatusCheck = async (_args: any, context: any) => {
     );
     return;
   }
+
+  // Load video model setting
+  try {
+    const modelSetting = await context.entities.Setting.findUnique({
+      where: { key: "ext.long-story-video.video_model" },
+    });
+    if (modelSetting?.value) setVideoModel(modelSetting.value);
+  } catch {}
 
   const novitaApiKey = apiKeySetting.value;
 

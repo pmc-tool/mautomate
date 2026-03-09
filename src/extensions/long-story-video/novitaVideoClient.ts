@@ -2,6 +2,24 @@ const NOVITA_BASE_URL = "https://api.novita.ai/v3/async";
 const FETCH_TIMEOUT_MS = 30_000;
 const LOG_PREFIX = "[novitaVideoClient]";
 
+// Configurable video model — set via Setting "ext.long-story-video.video_model"
+// Options: "wan2.6" (best quality, ~$0.50/5s), "wan2.1" (cheaper, ~$0.10/5s)
+let _videoModel = "wan2.1"; // default to cheaper model for testing
+
+export function setVideoModel(model: string) {
+  const valid = ["wan2.6", "wan2.1"];
+  if (valid.includes(model)) {
+    _videoModel = model;
+    console.log(`${LOG_PREFIX} Video model set to: ${model}`);
+  } else {
+    console.warn(`${LOG_PREFIX} Unknown model "${model}", keeping ${_videoModel}. Valid: ${valid.join(", ")}`);
+  }
+}
+
+export function getVideoModel(): string {
+  return _videoModel;
+}
+
 // ---------------------------------------------------------------------------
 // Exported interfaces
 // ---------------------------------------------------------------------------
@@ -118,7 +136,7 @@ export async function submitT2V(
   apiKey: string,
   params: NovitaT2VParams
 ): Promise<NovitaSubmitResult> {
-  const url = `${NOVITA_BASE_URL}/wan2.6-t2v`;
+  const url = `${NOVITA_BASE_URL}/${_videoModel}-t2v`;
   const body = {
     input: {
       prompt: params.prompt,
@@ -171,7 +189,7 @@ export async function submitI2V(
   apiKey: string,
   params: NovitaI2VParams
 ): Promise<NovitaSubmitResult> {
-  const url = `${NOVITA_BASE_URL}/wan2.6-i2v`;
+  const url = `${NOVITA_BASE_URL}/${_videoModel}-i2v`;
   const body = {
     input: {
       prompt: params.prompt,
