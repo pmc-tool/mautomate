@@ -16,28 +16,28 @@ export function CostEstimate({ sceneCount, resolution, targetDuration }: CostEst
   const totalCost = planCost + generationCost;
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+    <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-3 flex items-center gap-2">
-        <Coins className="h-5 w-5 text-yellow-400" />
-        <h3 className="font-semibold text-white">Credit Estimate</h3>
+        <Coins className="h-5 w-5 text-amber-500" />
+        <h3 className="font-semibold text-foreground">Credit Estimate</h3>
       </div>
 
       <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between text-gray-300">
+        <div className="flex items-center justify-between text-muted-foreground">
           <span>Story planning</span>
-          <span className="font-medium text-white">{planCost} credits</span>
+          <span className="font-medium text-foreground">{planCost} credits</span>
         </div>
-        <div className="flex items-center justify-between text-gray-300">
+        <div className="flex items-center justify-between text-muted-foreground">
           <span>
             Video generation ({sceneCount} scene{sceneCount !== 1 ? "s" : ""}, {resolution},{" "}
             ~{targetDuration}s)
           </span>
-          <span className="font-medium text-white">{generationCost} credits</span>
+          <span className="font-medium text-foreground">{generationCost} credits</span>
         </div>
-        <div className="my-2 border-t border-gray-700" />
+        <div className="my-2 border-t border-border" />
         <div className="flex items-center justify-between font-semibold">
-          <span className="text-white">Total</span>
-          <span className="text-yellow-400">{totalCost} credits</span>
+          <span className="text-foreground">Total</span>
+          <span className="text-amber-500">{totalCost} credits</span>
         </div>
       </div>
     </div>

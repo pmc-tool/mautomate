@@ -1,3 +1,5 @@
+import { CheckCircle2 } from "lucide-react";
+
 interface Scene {
   id: string;
   sceneIndex: number;
@@ -13,13 +15,13 @@ interface ProgressTrackerProps {
 function getStatusColor(status: string) {
   switch (status) {
     case "completed":
-      return "bg-green-500";
+      return "bg-emerald-500";
     case "generating":
       return "bg-blue-500 animate-pulse";
     case "failed":
       return "bg-red-500";
     default:
-      return "bg-gray-600";
+      return "bg-muted-foreground/30";
   }
 }
 
@@ -68,23 +70,24 @@ export function ProgressTracker({ scenes, projectStatus }: ProgressTrackerProps)
   if (projectStatus === "stitching") barProgress = 90;
   if (projectStatus === "completed") barProgress = 100;
 
+  const barColor =
+    projectStatus === "completed"
+      ? "bg-emerald-500"
+      : projectStatus === "failed"
+      ? "bg-red-500"
+      : "bg-blue-500";
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Progress bar */}
       <div className="flex items-center gap-3">
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-700">
+        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div
-            className={`h-full rounded-full transition-all duration-700 ${
-              projectStatus === "completed"
-                ? "bg-green-500"
-                : projectStatus === "failed"
-                ? "bg-red-500"
-                : "bg-blue-500"
-            }`}
+            className={`h-full rounded-full transition-all duration-700 ${barColor}`}
             style={{ width: `${barProgress}%` }}
           />
         </div>
-        <span className="min-w-[3rem] text-right text-sm font-medium text-gray-300">
+        <span className="min-w-[3rem] text-right text-sm font-semibold text-foreground">
           {barProgress}%
         </span>
       </div>
@@ -95,7 +98,7 @@ export function ProgressTracker({ scenes, projectStatus }: ProgressTrackerProps)
           <div key={scene.id} className="flex flex-col items-center gap-0.5">
             <div
               title={`Scene ${scene.sceneIndex + 1}: ${scene.status}${scene.status === "generating" ? ` (${scene.progress || 0}%)` : ""}`}
-              className={`h-3.5 w-3.5 rounded-full ${getStatusColor(scene.status)} flex items-center justify-center`}
+              className={`flex h-3.5 w-3.5 items-center justify-center rounded-full ${getStatusColor(scene.status)}`}
             >
               {scene.status === "completed" && (
                 <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -104,7 +107,7 @@ export function ProgressTracker({ scenes, projectStatus }: ProgressTrackerProps)
               )}
             </div>
             {scene.status === "generating" && (
-              <span className="text-[10px] text-blue-400">{scene.progress || 0}%</span>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400">{scene.progress || 0}%</span>
             )}
           </div>
         ))}
@@ -112,8 +115,8 @@ export function ProgressTracker({ scenes, projectStatus }: ProgressTrackerProps)
 
       {/* Status text */}
       <div>
-        {statusText && <p className="text-sm text-gray-300">{statusText}</p>}
-        {detailText && <p className="text-xs text-gray-500">{detailText}</p>}
+        {statusText && <p className="text-sm font-medium text-foreground">{statusText}</p>}
+        {detailText && <p className="text-xs text-muted-foreground">{detailText}</p>}
       </div>
     </div>
   );

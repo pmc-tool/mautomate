@@ -27,7 +27,7 @@ export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
 
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         Background Music
       </h3>
 
@@ -40,8 +40,8 @@ export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
             onClick={() => setActiveMood(mood)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               activeMood === mood
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
             {MOOD_LABELS[mood]}
@@ -61,20 +61,20 @@ export function MusicPicker({ selectedTrackId, onSelect }: MusicPickerProps) {
               onClick={() => onSelect(track.id)}
               className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
                 isSelected
-                  ? "border-blue-500 bg-blue-600/10 ring-1 ring-blue-500"
-                  : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary"
+                  : "border-border bg-card hover:border-primary/20"
               }`}
             >
               <div
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? "bg-blue-600" : "bg-gray-700"
+                  isSelected ? "bg-primary" : "bg-muted"
                 }`}
               >
-                <Music className="h-5 w-5 text-white" />
+                <Music className={`h-5 w-5 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-medium text-white">{track.name}</div>
-                <div className="truncate text-xs text-gray-400">{track.description}</div>
+                <div className="font-medium text-foreground">{track.name}</div>
+                <div className="truncate text-xs text-muted-foreground">{track.description}</div>
               </div>
             </button>
           );

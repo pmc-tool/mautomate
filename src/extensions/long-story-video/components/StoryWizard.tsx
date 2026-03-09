@@ -24,10 +24,10 @@ export function StoryWizard({ currentStep, steps, children }: StoryWizardProps) 
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                       isCompleted
-                        ? "bg-green-600 text-white"
+                        ? "bg-emerald-500 text-white"
                         : isCurrent
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-400"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {isCompleted ? <Check className="h-4 w-4" /> : stepNum}
@@ -35,10 +35,10 @@ export function StoryWizard({ currentStep, steps, children }: StoryWizardProps) 
                   <span
                     className={`hidden text-sm font-medium sm:inline ${
                       isCurrent
-                        ? "text-white"
+                        ? "text-foreground"
                         : isCompleted
-                        ? "text-green-400"
-                        : "text-gray-500"
+                        ? "text-emerald-600 dark:text-green-400"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {label}
@@ -47,7 +47,7 @@ export function StoryWizard({ currentStep, steps, children }: StoryWizardProps) 
                 {idx < steps.length - 1 && (
                   <div
                     className={`h-0.5 w-8 sm:w-16 ${
-                      isCompleted ? "bg-green-600" : "bg-gray-700"
+                      isCompleted ? "bg-emerald-500" : "bg-border"
                     }`}
                   />
                 )}

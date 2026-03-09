@@ -308,7 +308,7 @@ export default function StoryCreatePage({ user }: any) {
         <StoryWizard currentStep={currentStep} steps={STEPS}>
           {/* Error banner */}
           {error && (
-            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-800 bg-red-900/20 p-4 text-sm text-red-400">
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-300 bg-red-500/10 p-4 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -319,15 +319,15 @@ export default function StoryCreatePage({ user }: any) {
             <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-white">Create Your Story</h1>
-                  <p className="mt-1 text-gray-400">
+                  <h1 className="text-2xl font-bold text-foreground">Create Your Story</h1>
+                  <p className="mt-1 text-muted-foreground">
                     Describe your story idea and our AI will generate a full scene-by-scene plan.
                   </p>
                 </div>
                 {(prompt || projectId) && (
                   <button
                     onClick={handleStartFresh}
-                    className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                    className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
                   >
                     Clear draft
                   </button>
@@ -336,7 +336,7 @@ export default function StoryCreatePage({ user }: any) {
 
               {/* Prompt textarea */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   Story Idea
                 </label>
                 <textarea
@@ -344,16 +344,16 @@ export default function StoryCreatePage({ user }: any) {
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="A journey through the evolution of ancient civilizations, from the pyramids of Egypt to the temples of Angkor Wat..."
                   rows={5}
-                  className="w-full resize-none rounded-xl border border-gray-700 bg-gray-800 p-4 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full resize-none rounded-xl border border-border bg-card p-4 text-foreground placeholder-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {prompt.length}/20 characters minimum
                 </p>
               </div>
 
               {/* Duration selector */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   Target Duration
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -368,17 +368,17 @@ export default function StoryCreatePage({ user }: any) {
                       onClick={() => setTargetDuration(opt.value)}
                       className={`flex flex-col items-center gap-1 rounded-xl border p-4 transition-all ${
                         targetDuration === opt.value
-                          ? "border-blue-500 bg-blue-600/10 ring-1 ring-blue-500"
-                          : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "border-border bg-card hover:border-primary/20"
                       }`}
                     >
                       <Clock
                         className={`h-5 w-5 ${
-                          targetDuration === opt.value ? "text-blue-400" : "text-gray-500"
+                          targetDuration === opt.value ? "text-primary" : "text-muted-foreground"
                         }`}
                       />
-                      <span className="font-medium text-white">{opt.label}</span>
-                      <span className="text-xs text-gray-400">{opt.desc}</span>
+                      <span className="font-medium text-foreground">{opt.label}</span>
+                      <span className="text-xs text-muted-foreground">{opt.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -386,18 +386,18 @@ export default function StoryCreatePage({ user }: any) {
 
               {/* Reference image */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   Reference Image URL{" "}
-                  <span className="text-gray-500">(optional)</span>
+                  <span className="text-muted-foreground">(optional)</span>
                 </label>
-                <div className="flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-800 px-4 py-2">
-                  <ImageIcon className="h-4 w-4 text-gray-500" />
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={referenceImageUrl}
                     onChange={(e) => setReferenceImageUrl(e.target.value)}
                     placeholder="https://example.com/reference.jpg"
-                    className="flex-1 bg-transparent text-white placeholder-gray-500 focus:outline-none"
+                    className="flex-1 bg-transparent text-foreground placeholder-muted-foreground/50 focus:outline-none"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function StoryCreatePage({ user }: any) {
               <Button
                 onClick={handleGeneratePlan}
                 disabled={isLoading || prompt.trim().length < 20}
-                className="w-full bg-blue-600 py-3 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="w-full py-3"
                 size="lg"
               >
                 {isLoading ? (
@@ -429,23 +429,23 @@ export default function StoryCreatePage({ user }: any) {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-white">Story Plan</h2>
-                  <p className="mt-1 text-sm text-gray-400">
+                  <h2 className="text-xl font-bold text-foreground">Story Plan</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Edit scenes, adjust timing, or regenerate the entire plan.
                   </p>
                 </div>
-                <div className="flex items-center gap-2 rounded-lg bg-gray-800 px-3 py-1.5 text-sm">
-                  <Clock className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <span
                     className={`font-medium ${
                       Math.abs(totalDuration - targetDuration) > 15
-                        ? "text-yellow-400"
-                        : "text-green-400"
+                        ? "text-amber-500"
+                        : "text-emerald-600 dark:text-green-400"
                     }`}
                   >
                     {totalDuration}s
                   </span>
-                  <span className="text-gray-500">/ {targetDuration}s target</span>
+                  <span className="text-muted-foreground">/ {targetDuration}s target</span>
                 </div>
               </div>
 
@@ -454,14 +454,14 @@ export default function StoryCreatePage({ user }: any) {
                 {scenes.map((scene, idx) => (
                   <div
                     key={idx}
-                    className="rounded-xl border border-gray-700 bg-gray-800 p-4"
+                    className="rounded-xl border border-border bg-card p-4"
                   >
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
                           {idx + 1}
                         </span>
-                        <span className="text-sm font-medium text-gray-300">
+                        <span className="text-sm font-medium text-foreground">
                           Scene {idx + 1}
                         </span>
                       </div>
@@ -471,7 +471,7 @@ export default function StoryCreatePage({ user }: any) {
                           onChange={(e) =>
                             updateScene(idx, "duration", Number(e.target.value))
                           }
-                          className="rounded-lg border border-gray-700 bg-gray-900 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
+                          className="rounded-lg border border-border bg-muted px-2 py-1 text-sm text-foreground focus:border-primary focus:outline-none"
                         >
                           <option value={5}>5s</option>
                           <option value={10}>10s</option>
@@ -481,7 +481,7 @@ export default function StoryCreatePage({ user }: any) {
                           <button
                             type="button"
                             onClick={() => removeScene(idx)}
-                            className="rounded-lg p-1.5 text-gray-500 hover:bg-red-900/30 hover:text-red-400"
+                            className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -491,7 +491,7 @@ export default function StoryCreatePage({ user }: any) {
 
                     <div className="space-y-3">
                       <div>
-                        <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Visual Prompt
                         </label>
                         <textarea
@@ -500,12 +500,12 @@ export default function StoryCreatePage({ user }: any) {
                             updateScene(idx, "visualPrompt", e.target.value)
                           }
                           rows={2}
-                          className="w-full resize-none rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                          className="w-full resize-none rounded-lg border border-border bg-muted p-3 text-sm text-foreground placeholder-muted-foreground/50 focus:border-primary focus:outline-none"
                           placeholder="Describe the visual for this scene..."
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Narration Text
                         </label>
                         <textarea
@@ -514,7 +514,7 @@ export default function StoryCreatePage({ user }: any) {
                             updateScene(idx, "narrationText", e.target.value)
                           }
                           rows={2}
-                          className="w-full resize-none rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                          className="w-full resize-none rounded-lg border border-border bg-muted p-3 text-sm text-foreground placeholder-muted-foreground/50 focus:border-primary focus:outline-none"
                           placeholder="Narration text for this scene..."
                         />
                       </div>
@@ -527,7 +527,7 @@ export default function StoryCreatePage({ user }: any) {
               <button
                 type="button"
                 onClick={addScene}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-700 p-3 text-sm text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
               >
                 <Plus className="h-4 w-4" />
                 Add Scene
@@ -540,7 +540,6 @@ export default function StoryCreatePage({ user }: any) {
                     variant="outline"
                     onClick={handleRegeneratePlan}
                     disabled={isLoading}
-                    className="border-gray-700 text-gray-300 hover:bg-gray-800"
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -548,13 +547,13 @@ export default function StoryCreatePage({ user }: any) {
                       <RefreshCw className="h-4 w-4" />
                     )}
                     Regenerate Plan
-                    <span className="ml-1 text-xs text-gray-500">(10 credits)</span>
+                    <span className="ml-1 text-xs text-muted-foreground">(10 credits)</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={handleStartFresh}
                     disabled={isLoading}
-                    className="border-red-800 text-red-400 hover:bg-red-900/30"
+                    className="border-red-300 text-red-600 hover:bg-red-500/10 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
                   >
                     <Trash2 className="h-4 w-4" />
                     Start Fresh
@@ -563,7 +562,6 @@ export default function StoryCreatePage({ user }: any) {
                 <Button
                   onClick={() => setCurrentStep(3)}
                   disabled={scenes.length === 0}
-                  className="bg-blue-600 text-white hover:bg-blue-700"
                 >
                   Next
                   <ArrowRight className="h-4 w-4" />
@@ -576,8 +574,8 @@ export default function StoryCreatePage({ user }: any) {
           {currentStep === 3 && (
             <div className="space-y-8">
               <div>
-                <h2 className="text-xl font-bold text-white">Style & Settings</h2>
-                <p className="mt-1 text-sm text-gray-400">
+                <h2 className="text-xl font-bold text-foreground">Style & Settings</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Choose a voice, background music, and output settings.
                 </p>
               </div>
@@ -588,7 +586,7 @@ export default function StoryCreatePage({ user }: any) {
 
               {/* Resolution */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Resolution
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -602,29 +600,29 @@ export default function StoryCreatePage({ user }: any) {
                       onClick={() => setResolution(opt.value)}
                       className={`flex flex-col items-center gap-1 rounded-xl border p-4 transition-all ${
                         resolution === opt.value
-                          ? "border-blue-500 bg-blue-600/10 ring-1 ring-blue-500"
-                          : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "border-border bg-card hover:border-primary/20"
                       }`}
                     >
                       <Monitor
                         className={`h-5 w-5 ${
-                          resolution === opt.value ? "text-blue-400" : "text-gray-500"
+                          resolution === opt.value ? "text-primary" : "text-muted-foreground"
                         }`}
                       />
-                      <span className="font-medium text-white">{opt.label}</span>
-                      <span className="text-xs text-gray-400">{opt.desc}</span>
+                      <span className="font-medium text-foreground">{opt.label}</span>
+                      <span className="text-xs text-muted-foreground">{opt.desc}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Subtitles */}
-              <div className="flex items-center justify-between rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
                 <div className="flex items-center gap-3">
-                  <Subtitles className="h-5 w-5 text-gray-400" />
+                  <Subtitles className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-white">Subtitles</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="font-medium text-foreground">Subtitles</p>
+                    <p className="text-xs text-muted-foreground">
                       Burn subtitles into the final video
                     </p>
                   </div>
@@ -633,11 +631,11 @@ export default function StoryCreatePage({ user }: any) {
                   type="button"
                   onClick={() => setSubtitles(!subtitles)}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
-                    subtitles ? "bg-blue-600" : "bg-gray-600"
+                    subtitles ? "bg-primary" : "bg-muted-foreground/30"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                       subtitles ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />
@@ -649,14 +647,12 @@ export default function StoryCreatePage({ user }: any) {
                 <Button
                   variant="outline"
                   onClick={() => setCurrentStep(2)}
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
                 <Button
                   onClick={() => setCurrentStep(4)}
-                  className="bg-blue-600 text-white hover:bg-blue-700"
                 >
                   Next
                   <ArrowRight className="h-4 w-4" />
@@ -669,43 +665,43 @@ export default function StoryCreatePage({ user }: any) {
           {currentStep === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-white">Review & Generate</h2>
-                <p className="mt-1 text-sm text-gray-400">
+                <h2 className="text-xl font-bold text-foreground">Review & Generate</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Review your settings before starting generation.
                 </p>
               </div>
 
               {/* Summary card */}
-              <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-                <h3 className="mb-4 font-semibold text-white">Summary</h3>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <h3 className="mb-4 font-semibold text-foreground">Summary</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-400">Scenes</span>
-                    <p className="font-medium text-white">{scenes.length}</p>
+                    <span className="text-muted-foreground">Scenes</span>
+                    <p className="font-medium text-foreground">{scenes.length}</p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Total Duration</span>
-                    <p className="font-medium text-white">{totalDuration}s</p>
+                    <span className="text-muted-foreground">Total Duration</span>
+                    <p className="font-medium text-foreground">{totalDuration}s</p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Resolution</span>
-                    <p className="font-medium text-white">{resolution}</p>
+                    <span className="text-muted-foreground">Resolution</span>
+                    <p className="font-medium text-foreground">{resolution}</p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Voice</span>
-                    <p className="font-medium text-white">
+                    <span className="text-muted-foreground">Voice</span>
+                    <p className="font-medium text-foreground">
                       {VOICE_OPTIONS.find((v) => v.id === voiceId)?.name || voiceId}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Music</span>
-                    <p className="font-medium text-white">
+                    <span className="text-muted-foreground">Music</span>
+                    <p className="font-medium text-foreground">
                       {musicTrackId ? musicTrackId : "None selected"}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Subtitles</span>
-                    <p className="font-medium text-white">
+                    <span className="text-muted-foreground">Subtitles</span>
+                    <p className="font-medium text-foreground">
                       {subtitles ? "Enabled" : "Disabled"}
                     </p>
                   </div>
@@ -723,7 +719,6 @@ export default function StoryCreatePage({ user }: any) {
                 <Button
                   variant="outline"
                   onClick={() => setCurrentStep(3)}
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back
@@ -731,7 +726,7 @@ export default function StoryCreatePage({ user }: any) {
                 <Button
                   onClick={handleStartGeneration}
                   disabled={isLoading}
-                  className="bg-blue-600 px-8 text-white hover:bg-blue-700"
+                  className="px-8"
                   size="lg"
                 >
                   {isLoading ? (

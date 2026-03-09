@@ -9,7 +9,7 @@ interface VoicePickerProps {
 export function VoicePicker({ selectedVoiceId, onSelect }: VoicePickerProps) {
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         Narrator Voice
       </h3>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -22,18 +22,18 @@ export function VoicePicker({ selectedVoiceId, onSelect }: VoicePickerProps) {
               onClick={() => onSelect(voice.id)}
               className={`flex flex-col gap-1 rounded-xl border p-4 text-left transition-all ${
                 isSelected
-                  ? "border-blue-500 bg-blue-600/10 ring-1 ring-blue-500"
-                  : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary"
+                  : "border-border bg-card hover:border-primary/20"
               }`}
             >
               <div className="flex items-center gap-2">
-                <Mic className={`h-4 w-4 ${isSelected ? "text-blue-400" : "text-gray-500"}`} />
-                <span className="font-medium text-white">{voice.name}</span>
+                <Mic className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="font-medium text-foreground">{voice.name}</span>
               </div>
-              <span className={`text-xs ${isSelected ? "text-blue-300" : "text-gray-400"}`}>
+              <span className={`text-xs ${isSelected ? "text-primary/80" : "text-muted-foreground"}`}>
                 {voice.style}
               </span>
-              <span className="text-xs text-gray-500">{voice.description}</span>
+              <span className="text-xs text-muted-foreground/70">{voice.description}</span>
             </button>
           );
         })}
