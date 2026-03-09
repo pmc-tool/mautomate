@@ -10,9 +10,13 @@ import {
   SelectValue,
 } from "../../client/components/ui/select";
 import { cn } from "../../client/utils";
-import { Globe, MessageCircle, Phone, Send, Check } from "lucide-react";
+import { Globe, Check } from "lucide-react";
 import { saveChatbotChannel, deleteChatbotChannel } from "wasp/client/operations";
 import { useToast } from "../../client/hooks/use-toast";
+
+import messengerIcon from "../../social-connect/icons/messenger.svg";
+import whatsappIcon from "../../social-connect/icons/whatsapp.svg";
+import telegramIcon from "../../social-connect/icons/telegram.svg";
 
 interface WizardStepConfigureProps {
   draft: Record<string, any>;
@@ -41,10 +45,10 @@ const LANGUAGES = [
 ];
 
 const CHANNEL_CARDS = [
-  { key: "website", icon: Globe, label: "Website", description: "Embed on your website" },
-  { key: "messenger", icon: MessageCircle, label: "Messenger", description: "Facebook Messenger" },
-  { key: "whatsapp", icon: Phone, label: "WhatsApp", description: "WhatsApp Business" },
-  { key: "telegram", icon: Send, label: "Telegram", description: "Telegram bot" },
+  { key: "website", icon: Globe, img: null as string | null, label: "Website", description: "Embed on your website" },
+  { key: "messenger", icon: null, img: messengerIcon, label: "Messenger", description: "Facebook Messenger" },
+  { key: "whatsapp", icon: null, img: whatsappIcon, label: "WhatsApp", description: "WhatsApp Business" },
+  { key: "telegram", icon: null, img: telegramIcon, label: "Telegram", description: "Telegram bot" },
 ];
 
 export default function WizardStepConfigure({
@@ -181,7 +185,6 @@ export default function WizardStepConfigure({
         <div className="grid grid-cols-2 gap-3">
           {CHANNEL_CARDS.map((card) => {
             const isSelected = selectedChannels.includes(card.key);
-            const Icon = card.icon;
             return (
               <button
                 key={card.key}
@@ -199,12 +202,16 @@ export default function WizardStepConfigure({
                     <Check className="h-3 w-3" />
                   </span>
                 )}
-                <div className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
-                  isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                )}>
-                  <Icon className="h-5 w-5" />
-                </div>
+                {card.img ? (
+                  <img src={card.img} alt={card.label} className="h-10 w-10" />
+                ) : (
+                  <div className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
+                    isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                  )}>
+                    {card.icon && <card.icon className="h-5 w-5" />}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium">{card.label}</p>
                   <p className="text-muted-foreground text-[10px]">{card.description}</p>

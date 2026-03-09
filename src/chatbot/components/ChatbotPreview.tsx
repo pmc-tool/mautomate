@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { cn } from "../../client/utils";
-import { Globe, MessageCircle, Phone, Send } from "lucide-react";
+import { Globe } from "lucide-react";
 import WebsitePreview from "./previews/WebsitePreview";
 import MessengerPreview from "./previews/MessengerPreview";
 import WhatsAppPreview from "./previews/WhatsAppPreview";
 import TelegramPreview from "./previews/TelegramPreview";
+
+import messengerIcon from "../../social-connect/icons/messenger.svg";
+import whatsappIcon from "../../social-connect/icons/whatsapp.svg";
+import telegramIcon from "../../social-connect/icons/telegram.svg";
 
 interface ChatbotPreviewProps {
   draft: Record<string, any>;
@@ -12,11 +16,11 @@ interface ChatbotPreviewProps {
   chatbotId?: string;
 }
 
-const CHANNEL_CONFIG: Record<string, { label: string; icon: typeof Globe }> = {
-  website: { label: "Website", icon: Globe },
-  messenger: { label: "Messenger", icon: MessageCircle },
-  whatsapp: { label: "WhatsApp", icon: Phone },
-  telegram: { label: "Telegram", icon: Send },
+const CHANNEL_CONFIG: Record<string, { label: string; icon?: string }> = {
+  website: { label: "Website" },
+  messenger: { label: "Messenger", icon: messengerIcon },
+  whatsapp: { label: "WhatsApp", icon: whatsappIcon },
+  telegram: { label: "Telegram", icon: telegramIcon },
 };
 
 export default function ChatbotPreview({ draft, channels = ["website"], chatbotId }: ChatbotPreviewProps) {
@@ -34,7 +38,6 @@ export default function ChatbotPreview({ draft, channels = ["website"], chatbotI
           {activeChannels.map((ch) => {
             const config = CHANNEL_CONFIG[ch];
             if (!config) return null;
-            const Icon = config.icon;
             const isActive = current === ch;
             return (
               <button
@@ -47,7 +50,11 @@ export default function ChatbotPreview({ draft, channels = ["website"], chatbotI
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="h-3 w-3" />
+                {config.icon ? (
+                  <img src={config.icon} alt="" className="h-4 w-4" />
+                ) : (
+                  <Globe className="h-3 w-3" />
+                )}
                 {config.label}
               </button>
             );
@@ -57,9 +64,9 @@ export default function ChatbotPreview({ draft, channels = ["website"], chatbotI
 
       {/* Channel-specific preview */}
       {current === "website" && <WebsitePreview draft={draft} chatbotId={chatbotId} />}
-      {current === "messenger" && <MessengerPreview draft={draft} />}
-      {current === "whatsapp" && <WhatsAppPreview draft={draft} />}
-      {current === "telegram" && <TelegramPreview draft={draft} />}
+      {current === "messenger" && <MessengerPreview draft={draft} chatbotId={chatbotId} />}
+      {current === "whatsapp" && <WhatsAppPreview draft={draft} chatbotId={chatbotId} />}
+      {current === "telegram" && <TelegramPreview draft={draft} chatbotId={chatbotId} />}
     </div>
   );
 }
