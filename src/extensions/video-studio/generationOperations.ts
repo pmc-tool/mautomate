@@ -16,6 +16,7 @@ import {
   CREDIT_COSTS,
 } from "../../credits/creditConfig";
 import { deductCredits, refundCredits } from "../../credits/creditService";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 const EXTENSION_ID = "video-studio";
 const FAL_KEY_SETTING = "ext.video-studio.fal_api_key";
@@ -34,16 +35,14 @@ async function ensureExtensionActive(ueEntity: any, userId: string) {
 }
 
 async function getFalApiKey(settingEntity: any): Promise<string> {
-  const setting = await settingEntity.findUnique({
-    where: { key: FAL_KEY_SETTING },
-  });
-  if (!setting?.value) {
+  const apiKey = await getSecureSetting(settingEntity, FAL_KEY_SETTING);
+  if (!apiKey) {
     throw new HttpError(
       500,
       "fal.ai API key not configured. Ask your admin to set it in Settings.",
     );
   }
-  return setting.value;
+  return apiKey;
 }
 
 function getCreditAction(tier: string): CreditActionType {

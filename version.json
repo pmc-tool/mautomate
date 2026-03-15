@@ -1,0 +1,5 @@
+{
+  "version": 10,
+  "date": "2026-03-11",
+  "changelog": "Long Story Video upgrade: 3 quality tiers (Standard/Pro/Ultra), 17 HD narrator voices (MiniMax Speech-02-HD), subtitles always on. Production hardening: health check, rate limiting, API key encryption, audit log, onboarding checklist, error boundary."
+}

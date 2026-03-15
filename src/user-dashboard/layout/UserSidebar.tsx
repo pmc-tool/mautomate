@@ -25,6 +25,7 @@ import { NavLink, useLocation } from "react-router";
 import { useQuery } from "wasp/client/operations";
 import { getUserExtensions } from "wasp/client/operations";
 import Logo from "../../client/static/logo.png";
+import { useBranding } from "../../branding/BrandingContext";
 import { cn } from "../../client/utils";
 import { getEnabledExtensions } from "../../extensions/registry";
 import { CreditsWidget } from "../../client/components/CreditsWidget";
@@ -45,6 +46,7 @@ interface UserSidebarProps {
 
 const UserSidebar = ({ sidebarOpen, setSidebarOpen }: UserSidebarProps) => {
   const location = useLocation();
+  const branding = useBranding();
   const trigger = useRef<any>(null);
   const sidebar = useRef<any>(null);
 
@@ -116,7 +118,7 @@ const UserSidebar = ({ sidebarOpen, setSidebarOpen }: UserSidebarProps) => {
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
         <NavLink to="/">
-          <img src={Logo} alt="Logo" className="h-9 w-auto" />
+          <img src={branding.logoUrl || Logo} alt={branding.appName} className="h-9 w-auto" onError={(e) => { (e.target as HTMLImageElement).src = Logo; }} />
         </NavLink>
 
         <button

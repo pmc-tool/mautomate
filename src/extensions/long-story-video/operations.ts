@@ -1,6 +1,39 @@
 import { HttpError } from "wasp/server";
+import crypto from "crypto";
 
 const EXTENSION_ID = "long-story-video";
+
+// ---------------------------------------------------------------------------
+// Backfill download token for completed projects missing one
+// ---------------------------------------------------------------------------
+
+async function backfillDownloadToken(
+  storyProjectEntity: any,
+  project: any
+): Promise<any> {
+  if (
+    project.status !== "completed" ||
+    !project.finalVideoUrl ||
+    (project.metadata as any)?.downloadToken
+  ) {
+    return project;
+  }
+
+  // Generate a token and persist it
+  const downloadToken = crypto.randomBytes(32).toString("hex");
+  const existingMeta = (project.metadata as Record<string, unknown>) || {};
+  const updatedMeta = { ...existingMeta, downloadToken };
+  const projectId = project.id;
+  const baseUrl = project.finalVideoUrl.split("?")[0]; // strip any old query
+  const finalVideoUrl = `${baseUrl}?token=${downloadToken}`;
+
+  const updated = await storyProjectEntity.update({
+    where: { id: projectId },
+    data: { metadata: updatedMeta, finalVideoUrl },
+    include: { scenes: { orderBy: { sceneIndex: "asc" } } },
+  });
+  return updated;
+}
 
 // ---------------------------------------------------------------------------
 // Extension guard
@@ -26,11 +59,17 @@ export const getStoryProjects = async (_args: any, context: any) => {
   if (!context.user) throw new HttpError(401, "Not authenticated");
   await ensureExtensionActive(context.entities.UserExtension, context.user.id);
 
-  return context.entities.StoryProject.findMany({
+  const projects = await context.entities.StoryProject.findMany({
     where: { userId: context.user.id },
     include: { scenes: { orderBy: { sceneIndex: "asc" } } },
     orderBy: { updatedAt: "desc" },
   });
+
+  // Backfill download tokens for any completed projects missing one
+  const result = await Promise.all(
+    projects.map((p: any) => backfillDownloadToken(context.entities.StoryProject, p))
+  );
+  return result;
 };
 
 export const getStoryProject = async (
@@ -49,7 +88,8 @@ export const getStoryProject = async (
     throw new HttpError(404, "Story project not found.");
   }
 
-  return project;
+  // Backfill download token if this completed project is missing one
+  return backfillDownloadToken(context.entities.StoryProject, project);
 };
 
 // ---------------------------------------------------------------------------

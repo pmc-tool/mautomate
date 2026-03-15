@@ -189,6 +189,16 @@ query getDashboardStats {
   fn: import { getDashboardStats } from "@src/user-dashboard/dashboardOperations",
   entities: [SocialMediaAgentPost, SeoAgentPost, UserExtension]
 }
+
+query getOnboardingStatus {
+  fn: import { getOnboardingStatus } from "@src/user-dashboard/onboardingOperations",
+  entities: [UserExtension, SocialAccount, SocialMediaAgentPost, SeoAgentPost, Setting]
+}
+
+action dismissOnboarding {
+  fn: import { dismissOnboarding } from "@src/user-dashboard/onboardingOperations",
+  entities: [Setting]
+}
 //#endregion
 
 //#region User
@@ -1452,7 +1462,7 @@ action generateNarration {
 
 action stitchStoryVideo {
   fn: import { stitchStoryVideo } from "@src/extensions/long-story-video/generationOperations",
-  entities: [StoryProject, StoryScene, UserExtension, Setting]
+  entities: [StoryProject, StoryScene, UserExtension, Setting, User, CreditTransaction]
 }
 
 action checkStoryStatus {
@@ -1673,6 +1683,105 @@ action updateDocCategory {
 action deleteDocCategory {
   fn: import { deleteDocCategory } from "@src/docs/operations",
   entities: [DocCategory, DocPage]
+}
+
+// ---------------------------------------------------------------------------
+// Announcements & Promotions
+// ---------------------------------------------------------------------------
+
+route AdminAnnouncementsRoute { path: "/admin/announcements", to: AdminAnnouncementsPage }
+page AdminAnnouncementsPage {
+  authRequired: true,
+  component: import AdminAnnouncementsPage from "@src/admin/dashboards/announcements/AdminAnnouncementsPage"
+}
+
+query getActiveAnnouncements {
+  fn: import { getActiveAnnouncements } from "@src/announcement/operations",
+  entities: [Announcement]
+}
+
+query getAdminAnnouncements {
+  fn: import { getAdminAnnouncements } from "@src/announcement/operations",
+  entities: [Announcement]
+}
+
+action createAnnouncement {
+  fn: import { createAnnouncement } from "@src/announcement/operations",
+  entities: [Announcement]
+}
+
+action updateAnnouncement {
+  fn: import { updateAnnouncement } from "@src/announcement/operations",
+  entities: [Announcement]
+}
+
+action deleteAnnouncement {
+  fn: import { deleteAnnouncement } from "@src/announcement/operations",
+  entities: [Announcement]
+}
+
+//#endregion
+
+// ---------------------------------------------------------------------------
+// #region Branding (White-Label CMS)
+// ---------------------------------------------------------------------------
+
+query getBrandingSettings {
+  fn: import { getBrandingSettings } from "@src/branding/operations",
+  entities: [Setting]
+}
+
+action saveBrandingSettings {
+  fn: import { saveBrandingSettings } from "@src/branding/operations",
+  entities: [Setting]
+}
+
+route AdminBrandingRoute { path: "/admin/branding", to: AdminBrandingPage }
+page AdminBrandingPage {
+  authRequired: true,
+  component: import AdminBrandingPage from "@src/admin/dashboards/branding/AdminBrandingPage"
+}
+
+//#endregion
+
+// ---------------------------------------------------------------------------
+// #region System Update (White-Label)
+// ---------------------------------------------------------------------------
+
+route AdminSystemUpdateRoute { path: "/admin/system-update", to: AdminSystemUpdatePage }
+page AdminSystemUpdatePage {
+  authRequired: true,
+  component: import AdminSystemUpdatePage from "@src/admin/dashboards/system-update/AdminSystemUpdatePage"
+}
+
+query getSystemUpdateStatus {
+  fn: import { getSystemUpdateStatus } from "@src/admin/system-update/operations",
+  entities: [Setting]
+}
+
+action triggerSystemUpdate {
+  fn: import { triggerSystemUpdate } from "@src/admin/system-update/operations",
+  entities: [Setting]
+}
+
+query getUpdateLog {
+  fn: import { getUpdateLog } from "@src/admin/system-update/operations",
+  entities: [Setting]
+}
+
+//#endregion
+
+//#region Activity Log
+
+route AdminActivityRoute { path: "/admin/activity", to: AdminActivityPage }
+page AdminActivityPage {
+  authRequired: true,
+  component: import AdminActivityPage from "@src/admin/dashboards/activity/AdminActivityPage"
+}
+
+query getAuditLogs {
+  fn: import { getAuditLogs } from "@src/admin/dashboards/activity/operations",
+  entities: [AuditLog, User]
 }
 
 //#endregion

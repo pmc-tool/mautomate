@@ -15,6 +15,7 @@ import { UserDropdown } from "../../../user/UserDropdown";
 import { UserMenuItems } from "../../../user/UserMenuItems";
 import { useIsLandingPage } from "../../hooks/useIsLandingPage";
 import logo from "../../static/logo.png";
+import { useBranding } from "../../../branding/BrandingContext";
 import { cn } from "../../utils";
 import DarkModeSwitcher from "../DarkModeSwitcher";
 import { Announcement } from "./Announcement";
@@ -162,7 +163,7 @@ function NavBarMobileMenu({
           <SheetHeader>
             <SheetTitle className="flex items-center">
               <WaspRouterLink to={routes.LandingPageRoute.to}>
-                <span className="sr-only">mAutomate</span>
+                <span className="sr-only">Home</span>
                 <NavLogo isScrolled={false} />
               </WaspRouterLink>
             </SheetTitle>
@@ -226,13 +227,17 @@ function renderNavigationItems(
   });
 }
 
-const NavLogo = ({ isScrolled }: { isScrolled: boolean }) => (
-  <img
-    className={cn("transition-all duration-500 w-auto", {
-      "h-9": !isScrolled,
-      "h-7": isScrolled,
-    })}
-    src={logo}
-    alt="mAutomate"
-  />
-);
+const NavLogo = ({ isScrolled }: { isScrolled: boolean }) => {
+  const branding = useBranding();
+  return (
+    <img
+      className={cn("transition-all duration-500 w-auto", {
+        "h-9": !isScrolled,
+        "h-7": isScrolled,
+      })}
+      src={branding.logoUrl || logo}
+      alt={branding.appName}
+      onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+    />
+  );
+};

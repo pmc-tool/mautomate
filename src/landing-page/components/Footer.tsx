@@ -1,4 +1,5 @@
 import footerLogo from "../../client/static/logo.png";
+import { useBranding } from "../../branding/BrandingContext";
 
 interface NavigationItem {
   name: string;
@@ -13,7 +14,14 @@ export default function Footer({
     integrations: NavigationItem[];
   };
 }) {
+  const branding = useBranding();
   const currentYear = new Date().getFullYear();
+  const primaryColor = branding.primaryColor || "#bd711d";
+  const darkerPrimary = darkenColor(primaryColor, 0.15);
+  const logoSrc = branding.logoUrl || footerLogo;
+  const copyrightText = branding.copyrightText || `${currentYear} ${branding.domain || "mAutomate.ai"}. All rights reserved.`;
+  const termsUrl = branding.termsUrl || "/terms";
+  const privacyUrl = branding.privacyUrl || "/privacy";
 
   return (
     <footer className="bg-[#f8f4f1] dark:bg-card">
@@ -67,16 +75,16 @@ export default function Footer({
             {/* Right: CTA */}
             <div className="max-w-[483px]">
               <h3 className="text-[22px] font-semibold leading-[1.3] text-[#0a0f14] sm:text-[28px] sm:leading-[36.4px] dark:text-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
-                Smart Campaign Orchestrator
+                {branding.footerCtaTitle || "Smart Campaign Orchestrator"}
               </h3>
               <p className="mt-[12px] text-[14px] leading-[1.7] text-[rgba(10,15,20,0.55)] sm:text-[15px] sm:leading-[25.5px] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
-                AI marketing automation platform for campaign orchestration, audience segmentation, and attribution analytics.
+                {branding.footerCtaDesc || "AI marketing automation platform for campaign orchestration, audience segmentation, and attribution analytics."}
               </p>
               <div className="mt-[24px] flex flex-col gap-[12px] sm:mt-[32px]">
                 <a
-                  href="mailto:contact@mautomate.ai"
-                  className="flex h-[48px] items-center justify-center rounded-[10px] border border-[#925716] bg-[#bd711d] px-[24px] py-[12px] text-[14px] font-semibold text-white shadow-[0px_16px_8px_0px_rgba(189,113,29,0.01),0px_12px_6px_0px_rgba(189,113,29,0.04),0px_4px_4px_0px_rgba(189,113,29,0.07),0px_1.5px_3px_0px_rgba(34,34,34,0.08)] transition-all hover:bg-[#a5631a] sm:h-[50.5px] sm:px-[32px] sm:text-[15px]"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                  href={`mailto:${branding.contactEmail || "contact@mautomate.ai"}`}
+                  className="flex h-[48px] items-center justify-center rounded-[10px] border px-[24px] py-[12px] text-[14px] font-semibold text-white shadow-[0px_16px_8px_0px_rgba(189,113,29,0.01),0px_12px_6px_0px_rgba(189,113,29,0.04),0px_4px_4px_0px_rgba(189,113,29,0.07),0px_1.5px_3px_0px_rgba(34,34,34,0.08)] transition-all sm:h-[50.5px] sm:px-[32px] sm:text-[15px]"
+                  style={{ fontFamily: "'Poppins', sans-serif", backgroundColor: primaryColor, borderColor: darkerPrimary }}
                 >
                   Contact Us
                 </a>
@@ -105,8 +113,9 @@ export default function Footer({
           />
           {/* Big logo as watermark — full width, centered */}
           <img
-            src={footerLogo}
-            alt="mAutomate"
+            src={logoSrc}
+            alt={branding.appName}
+            onError={(e) => { (e.target as HTMLImageElement).src = footerLogo; }}
             className="absolute bottom-0 left-1/2 z-0 h-auto w-[90%] max-w-[900px] -translate-x-1/2 object-contain opacity-30 sm:w-[85%] dark:opacity-10"
           />
         </div>
@@ -114,18 +123,18 @@ export default function Footer({
         {/* Bottom bar */}
         <div className="mt-[16px] flex flex-col items-center gap-3 sm:mt-[20px] sm:flex-row sm:justify-between sm:gap-0">
           <p className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] sm:text-[15px] dark:text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>
-            {currentYear} mAutomate.ai. All rights reserved.
+            {copyrightText}
           </p>
           <div className="flex gap-[16px] sm:gap-[27px]">
             <a
-              href="https://mautomate.ai/terms"
+              href={termsUrl.startsWith("http") ? termsUrl : `https://${branding.domain || "mautomate.ai"}${termsUrl}`}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
               Terms of Service
             </a>
             <a
-              href="https://mautomate.ai/privacy"
+              href={privacyUrl.startsWith("http") ? privacyUrl : `https://${branding.domain || "mautomate.ai"}${privacyUrl}`}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
@@ -136,4 +145,12 @@ export default function Footer({
       </div>
     </footer>
   );
+}
+
+function darkenColor(hex: string, amount: number): string {
+  const c = hex.replace("#", "");
+  const r = Math.max(0, parseInt(c.substring(0, 2), 16) - Math.round(255 * amount));
+  const g = Math.max(0, parseInt(c.substring(2, 4), 16) - Math.round(255 * amount));
+  const b = Math.max(0, parseInt(c.substring(4, 6), 16) - Math.round(255 * amount));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

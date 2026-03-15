@@ -9,21 +9,20 @@ import type { GeneratedImage } from "wasp/entities";
 import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import { submitTxt2Img, checkTaskResult } from "./novitaClient";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 const NOVITA_API_KEY_SETTING = "ext.ai-image-generator.novita_api_key";
 const EXTENSION_ID = "ai-image-generator";
 
 async function getNovitaApiKey(settingEntity: any): Promise<string> {
-  const setting = await settingEntity.findUnique({
-    where: { key: NOVITA_API_KEY_SETTING },
-  });
-  if (!setting?.value) {
+  const apiKey = await getSecureSetting(settingEntity, NOVITA_API_KEY_SETTING);
+  if (!apiKey) {
     throw new HttpError(
       400,
       "Novita API key not configured. Ask your admin to set it up."
     );
   }
-  return setting.value;
+  return apiKey;
 }
 
 async function ensureExtensionActive(

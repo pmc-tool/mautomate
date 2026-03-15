@@ -23,6 +23,8 @@ import {
   Plus,
   Share2,
   FileText,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import UserDashboardLayout from "../../user-dashboard/layout/UserDashboardLayout";
 import { Button } from "../../client/components/ui/button";
@@ -73,6 +75,13 @@ export default function PostHubPage({ user }: { user: AuthUser }) {
   // Sort state (for list view)
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt" | "title" | "status">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Schedule modal (shown when dragging to "scheduled" column)
+  const [scheduleModal, setScheduleModal] = useState<{
+    postId: string;
+    postType: string;
+  } | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
 
   // Build query args — backend only supports date-based sort fields
   const serverSortBy = (sortBy === "title" || sortBy === "status") ? "createdAt" : sortBy;
@@ -270,6 +279,22 @@ export default function PostHubPage({ user }: { user: AuthUser }) {
     postType: string,
     targetStatus: string
   ) {
+    // Intercept "scheduled" — show date/time picker first
+    if (targetStatus === "scheduled") {
+      // Default to tomorrow 9:00 AM in local datetime-local format
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      const y = tomorrow.getFullYear();
+      const mo = String(tomorrow.getMonth() + 1).padStart(2, "0");
+      const d = String(tomorrow.getDate()).padStart(2, "0");
+      const h = String(tomorrow.getHours()).padStart(2, "0");
+      const mi = String(tomorrow.getMinutes()).padStart(2, "0");
+      setScheduleDate(`${y}-${mo}-${d}T${h}:${mi}`);
+      setScheduleModal({ postId, postType });
+      return;
+    }
+
     try {
       await movePost({
         postId,
@@ -280,6 +305,28 @@ export default function PostHubPage({ user }: { user: AuthUser }) {
     } catch (err: any) {
       console.error("Failed to move post:", err);
       toast({ title: "Error", description: err?.message ?? "Failed to move post.", variant: "destructive" });
+    }
+  }
+
+  async function handleScheduleConfirm() {
+    if (!scheduleModal || !scheduleDate) return;
+    setActionLoading(true);
+    try {
+      await movePost({
+        postId: scheduleModal.postId,
+        postType: scheduleModal.postType as "social" | "seo",
+        targetStatus: "scheduled",
+        scheduledAt: new Date(scheduleDate).toISOString(),
+      });
+      await refetchPosts();
+      toast({ title: "Post scheduled", description: `Scheduled for ${new Date(scheduleDate).toLocaleString()}` });
+    } catch (err: any) {
+      console.error("Failed to schedule post:", err);
+      toast({ title: "Error", description: err?.message ?? "Failed to schedule post.", variant: "destructive" });
+    } finally {
+      setScheduleModal(null);
+      setScheduleDate("");
+      setActionLoading(false);
     }
   }
 
@@ -495,6 +542,52 @@ export default function PostHubPage({ user }: { user: AuthUser }) {
           defaultPostType={createPostType}
           onPostCreated={() => refetchPosts()}
         />
+
+        {/* Schedule date/time modal */}
+        {scheduleModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
+              <div className="mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-amber-500" />
+                <h3 className="text-lg font-semibold">Schedule Post</h3>
+              </div>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Choose when this post should be published.
+              </p>
+              <div className="mb-5">
+                <label className="mb-1.5 block text-sm font-medium">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}T${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`; })()}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setScheduleModal(null);
+                    setScheduleDate("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleScheduleConfirm}
+                  disabled={!scheduleDate || actionLoading}
+                  className="gap-1.5"
+                >
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                  Schedule
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </UserDashboardLayout>
   );

@@ -13,6 +13,7 @@
 
 import { publishToSocial } from "./publishers/socialPublisher";
 import { publishToWordPress } from "./publishers/wordpressPublisher";
+import { logAudit } from "../../server/auditLog";
 
 // ---------------------------------------------------------------------------
 // Main job handler
@@ -95,6 +96,7 @@ export async function publishScheduledPosts(_args: unknown, context: any) {
         });
 
         publishedCount++;
+        logAudit({ userId: post.userId, action: "post.publish", resource: `social:${post.id}`, detail: post.platform });
         console.log(
           `[publishScheduledPosts] Social post ${post.id} published to ${post.platform}.`
         );
@@ -118,6 +120,7 @@ export async function publishScheduledPosts(_args: unknown, context: any) {
         });
 
         failedCount++;
+        logAudit({ userId: post.userId, action: "post.fail", resource: `social:${post.id}`, detail: result.errorMessage });
         console.error(
           `[publishScheduledPosts] Social post ${post.id} failed: ${result.errorMessage}`
         );
@@ -215,6 +218,7 @@ export async function publishScheduledPosts(_args: unknown, context: any) {
         });
 
         publishedCount++;
+        logAudit({ userId: post.userId, action: "post.publish", resource: `seo:${post.id}`, detail: `WordPress ID: ${result.wpPostId}` });
         console.log(
           `[publishScheduledPosts] SEO post ${post.id} published to WordPress (WP ID: ${result.wpPostId}).`
         );

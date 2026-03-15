@@ -1,4 +1,5 @@
 import { Link as WaspRouterLink, routes } from "wasp/client/router";
+import { useBranding } from "../../branding/BrandingContext";
 import heroBg from "../../client/static/landing/hero-bg.png";
 import heroGlow from "../../client/static/landing/hero-glow.svg";
 import growthChart from "../../client/static/landing/growth-chart.svg";
@@ -9,6 +10,9 @@ import instagramIcon from "../../client/static/landing/platforms/instagram.png";
 import linkedinIcon from "../../client/static/landing/platforms/linkedin.png";
 
 export default function Hero() {
+  const branding = useBranding();
+  const primaryColor = branding.primaryColor || "#bd711d";
+  const darkerPrimary = darkenColor(primaryColor, 0.15);
   return (
     <div className="relative w-full overflow-hidden">
       {/* Light mode: Figma background images */}
@@ -58,17 +62,17 @@ export default function Hero() {
 
           {/* Main headline */}
           <div className="flex flex-col items-center leading-[1.1] tracking-[-0.92px]" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
-            <h1 className="text-[36px] font-bold text-[#bd711d] sm:text-[56px] md:text-[72px] lg:text-[92px]">
-              Marketing OS
+            <h1 className="text-[36px] font-bold sm:text-[56px] md:text-[72px] lg:text-[92px]" style={{ color: primaryColor }}>
+              {branding.tagline || "Marketing OS"}
             </h1>
             <h1 className="text-[36px] font-bold text-[#0a0f14] sm:text-[56px] md:text-[72px] lg:text-[92px] dark:text-foreground">
-              mAutomate.ai
+              {branding.domain || "mAutomate.ai"}
             </h1>
           </div>
 
           {/* Subtitle */}
           <p className="mt-[10px] max-w-[481px] px-2 text-center text-[15px] leading-[1.6] text-[#2e2e2e] sm:px-0 sm:text-[18px] dark:text-muted-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
-            The complete Al Marketing Operating System, not just a tool. Automate Content, Reels, DMs, and Growth in One Platform with a single Al Brain.
+            {branding.slogan || "The complete Al Marketing Operating System, not just a tool. Automate Content, Reels, DMs, and Growth in One Platform with a single Al Brain."}
           </p>
         </div>
 
@@ -103,7 +107,8 @@ export default function Hero() {
             </WaspRouterLink>
             <WaspRouterLink
               to={routes.SignupRoute.to}
-              className="relative flex h-[48px] w-full items-center justify-center gap-[6px] rounded-[12px] border border-[#925716] bg-[#bd711d] px-[24px] py-[12px] text-[16px] font-medium text-white shadow-[0px_16px_8px_0px_rgba(189,113,29,0.01),0px_12px_6px_0px_rgba(189,113,29,0.04),0px_4px_4px_0px_rgba(189,113,29,0.07),0px_1.5px_3px_0px_rgba(34,34,34,0.08)] transition-all hover:bg-[#a5631a] sm:h-[56px] sm:w-auto sm:px-[32px] sm:text-[18px]"
+              className="relative flex h-[48px] w-full items-center justify-center gap-[6px] rounded-[12px] border px-[24px] py-[12px] text-[16px] font-medium text-white shadow-[0px_16px_8px_0px_rgba(189,113,29,0.01),0px_12px_6px_0px_rgba(189,113,29,0.04),0px_4px_4px_0px_rgba(189,113,29,0.07),0px_1.5px_3px_0px_rgba(34,34,34,0.08)] transition-all sm:h-[56px] sm:w-auto sm:px-[32px] sm:text-[18px]"
+              style={{ backgroundColor: primaryColor, borderColor: darkerPrimary }}
             >
               Start Free
               <img src={arrowIcon} alt="" className="h-[24px] w-[24px]" />
@@ -135,4 +140,12 @@ export default function Hero() {
       </div>
     </div>
   );
+}
+
+function darkenColor(hex: string, amount: number): string {
+  const c = hex.replace("#", "");
+  const r = Math.max(0, parseInt(c.substring(0, 2), 16) - Math.round(255 * amount));
+  const g = Math.max(0, parseInt(c.substring(2, 4), 16) - Math.round(255 * amount));
+  const b = Math.max(0, parseInt(c.substring(4, 6), 16) - Math.round(255 * amount));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

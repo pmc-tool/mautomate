@@ -90,6 +90,111 @@ async function fetchWithTimeout(
 }
 
 // ---------------------------------------------------------------------------
+// Endpoint & body helpers per model version
+// ---------------------------------------------------------------------------
+
+/**
+ * Wan 2.1 uses flat body format: { prompt, width, height, seed, ... }
+ * Endpoint: wan-t2v / wan-i2v
+ *
+ * Wan 2.6 uses nested format: { input: { prompt, ... }, parameters: { ... } }
+ * Endpoint: wan2.6-t2v / wan2.6-i2v
+ */
+
+function sizeToWidthHeight(size: string): { width: number; height: number } {
+  const [w, h] = size.split("*").map(Number);
+  return { width: w || 1280, height: h || 720 };
+}
+
+function buildT2VUrlAndBody(params: NovitaT2VParams, model?: string): { url: string; body: any } {
+  const effectiveModel = model || _videoModel;
+  const defaultNeg = "text, watermark, subtitles, captions, letters, words, logo, blurry, low quality, static image, still frame, morphing, melting, flickering, jittering, duplicate frames, deformed hands, deformed fingers";
+  const negPrompt = params.negative_prompt || defaultNeg;
+  if (effectiveModel === "wan2.1") {
+    const { width, height } = sizeToWidthHeight(params.size);
+    return {
+      url: `${NOVITA_BASE_URL}/wan-t2v`,
+      body: {
+        prompt: params.prompt,
+        negative_prompt: negPrompt,
+        width,
+        height,
+        seed: params.seed ?? -1,
+        steps: 30,
+        guidance_scale: 5.0,
+        flow_shift: 5.0,
+        fast_mode: false,
+      },
+    };
+  }
+
+  // wan2.6 — nested format, prompt_extend disabled to preserve our crafted prompts
+  return {
+    url: `${NOVITA_BASE_URL}/wan2.6-t2v`,
+    body: {
+      input: {
+        prompt: params.prompt,
+        negative_prompt: negPrompt,
+      },
+      parameters: {
+        seed: params.seed,
+        duration: params.duration,
+        size: params.size,
+        shot_type: params.shot_type,
+        prompt_extend: false,
+        watermark: params.watermark ?? false,
+        audio: false,
+      },
+    },
+  };
+}
+
+function buildI2VUrlAndBody(params: NovitaI2VParams, model?: string): { url: string; body: any } {
+  const effectiveModel = model || _videoModel;
+  const defaultNeg = "text, watermark, subtitles, captions, letters, words, logo, blurry, low quality, static image, still frame, morphing, melting, flickering, jittering, duplicate frames, deformed hands, deformed fingers";
+  const negPrompt = params.negative_prompt || defaultNeg;
+  if (effectiveModel === "wan2.1") {
+    const { width, height } = sizeToWidthHeight(params.size);
+    return {
+      url: `${NOVITA_BASE_URL}/wan-i2v`,
+      body: {
+        prompt: params.prompt,
+        image_url: params.image_url,
+        negative_prompt: negPrompt,
+        width,
+        height,
+        seed: params.seed ?? -1,
+        steps: 30,
+        guidance_scale: 5.0,
+        flow_shift: 5.0,
+        fast_mode: false,
+      },
+    };
+  }
+
+  // wan2.6 — nested format, prompt_extend disabled to preserve our crafted prompts
+  return {
+    url: `${NOVITA_BASE_URL}/wan2.6-i2v`,
+    body: {
+      input: {
+        prompt: params.prompt,
+        negative_prompt: negPrompt,
+        img_url: params.image_url,
+      },
+      parameters: {
+        seed: params.seed,
+        duration: params.duration,
+        size: params.size,
+        shot_type: params.shot_type,
+        prompt_extend: false,
+        watermark: params.watermark ?? false,
+        audio: false,
+      },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Resolution helper
 // ---------------------------------------------------------------------------
 
@@ -129,29 +234,44 @@ export function resolutionToSize(
 }
 
 // ---------------------------------------------------------------------------
+// Retry wrapper with exponential backoff (used for status polling only)
+// ---------------------------------------------------------------------------
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  maxRetries = 3,
+  baseDelayMs = 2000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fetchWithTimeout(url, init);
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt); // 2s, 4s, 8s
+        console.warn(`${LOG_PREFIX} Attempt ${attempt + 1} failed, retrying in ${delay}ms: ${err.message}`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ---------------------------------------------------------------------------
 // Submit text-to-video
 // ---------------------------------------------------------------------------
 
 export async function submitT2V(
   apiKey: string,
-  params: NovitaT2VParams
+  params: NovitaT2VParams,
+  model?: string
 ): Promise<NovitaSubmitResult> {
-  const url = `${NOVITA_BASE_URL}/${_videoModel}-t2v`;
-  const body = {
-    input: {
-      prompt: params.prompt,
-      negative_prompt: params.negative_prompt ?? "",
-    },
-    parameters: {
-      seed: params.seed,
-      duration: params.duration,
-      size: params.size,
-      shot_type: params.shot_type,
-      prompt_extend: params.prompt_extend ?? true,
-      watermark: params.watermark ?? false,
-      audio: false,
-    },
-  };
+  const { url, body } = buildT2VUrlAndBody(params, model);
+  const effectiveModel = model || _videoModel;
+
+  console.log(`${LOG_PREFIX} submitT2V → ${url} (model: ${effectiveModel})`);
 
   try {
     const response = await fetchWithTimeout(url, {
@@ -187,25 +307,13 @@ export async function submitT2V(
 
 export async function submitI2V(
   apiKey: string,
-  params: NovitaI2VParams
+  params: NovitaI2VParams,
+  model?: string
 ): Promise<NovitaSubmitResult> {
-  const url = `${NOVITA_BASE_URL}/${_videoModel}-i2v`;
-  const body = {
-    input: {
-      prompt: params.prompt,
-      negative_prompt: params.negative_prompt ?? "",
-      img_url: params.image_url,
-    },
-    parameters: {
-      seed: params.seed,
-      duration: params.duration,
-      size: params.size,
-      shot_type: params.shot_type,
-      prompt_extend: params.prompt_extend ?? true,
-      watermark: params.watermark ?? false,
-      audio: false,
-    },
-  };
+  const { url, body } = buildI2VUrlAndBody(params, model);
+  const effectiveModel = model || _videoModel;
+
+  console.log(`${LOG_PREFIX} submitI2V → ${url} (model: ${effectiveModel})`);
 
   try {
     const response = await fetchWithTimeout(url, {
@@ -246,7 +354,7 @@ export async function checkStatus(
   const url = `${NOVITA_BASE_URL}/task-result?task_id=${encodeURIComponent(taskId)}`;
 
   try {
-    const response = await fetchWithTimeout(url, {
+    const response = await fetchWithRetry(url, {
       method: "GET",
       headers: buildHeaders(apiKey),
     });

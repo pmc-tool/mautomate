@@ -10,6 +10,7 @@ import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import { deductCredits, refundCredits } from "../../credits/creditService";
 import { CreditActionType } from "../../credits/creditConfig";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // Extension guard
@@ -36,18 +37,16 @@ async function ensureExtensionActive(
 // ---------------------------------------------------------------------------
 
 async function getOpenAIClient(settingEntity: any): Promise<OpenAI> {
-  const apiKeySetting = await settingEntity.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
+  const apiKey = await getSecureSetting(settingEntity, "platform.openai_api_key");
 
-  if (!apiKeySetting?.value) {
+  if (!apiKey) {
     throw new HttpError(
       400,
       "OpenAI API key is not configured. Please set it in Admin Settings.",
     );
   }
 
-  return new OpenAI({ apiKey: apiKeySetting.value });
+  return new OpenAI({ apiKey });
 }
 
 // ---------------------------------------------------------------------------

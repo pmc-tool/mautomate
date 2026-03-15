@@ -1,15 +1,15 @@
 // ---------------------------------------------------------------------------
-// TTS Service — Uses Novita AI Text-to-Speech API
+// TTS Service — Uses Novita AI MiniMax Speech-02-HD (high-quality voices)
 // ---------------------------------------------------------------------------
 
-const NOVITA_TTS_URL = "https://api.novita.ai/v3/async/txt2speech";
+const NOVITA_TTS_URL = "https://api.novita.ai/v3/async/minimax-speech-02-hd";
 const NOVITA_STATUS_URL = "https://api.novita.ai/v3/async/task-result";
 const LOG = "[ttsService]";
 const TTS_POLL_INTERVAL_MS = 5_000;
 const TTS_MAX_POLLS = 40; // 40 × 5s = ~3.3 minutes max wait
 
 // ---------------------------------------------------------------------------
-// Voice Options Registry
+// Voice Options Registry — MiniMax Speech-02-HD voices
 // ---------------------------------------------------------------------------
 
 export interface VoiceOption {
@@ -17,16 +17,29 @@ export interface VoiceOption {
   name: string;
   style: string;
   description: string;
-  novitaVoiceId: string; // Novita voice_id
+  gender: "male" | "female";
 }
 
 export const VOICE_OPTIONS: VoiceOption[] = [
-  { id: "alloy", name: "James", style: "Neutral", description: "Clean, balanced male voice", novitaVoiceId: "James" },
-  { id: "echo", name: "Michael", style: "Warm", description: "Warm and conversational", novitaVoiceId: "Michael" },
-  { id: "fable", name: "John", style: "Storytelling", description: "Expressive, narrative style", novitaVoiceId: "John" },
-  { id: "onyx", name: "Emily", style: "Authoritative", description: "Clear, commanding presence", novitaVoiceId: "Emily" },
-  { id: "nova", name: "Olivia", style: "Friendly", description: "Bright and engaging", novitaVoiceId: "Olivia" },
-  { id: "shimmer", name: "Sarah", style: "Gentle", description: "Soft and calming", novitaVoiceId: "Sarah" },
+  // Female voices
+  { id: "Wise_Woman", name: "Wise Woman", style: "Narrator", description: "Mature, authoritative storytelling", gender: "female" },
+  { id: "Inspirational_girl", name: "Inspirational Girl", style: "Motivational", description: "Uplifting and energetic", gender: "female" },
+  { id: "Calm_Woman", name: "Calm Woman", style: "Serene", description: "Soothing and peaceful", gender: "female" },
+  { id: "Lively_Girl", name: "Lively Girl", style: "Energetic", description: "Bright and dynamic", gender: "female" },
+  { id: "Lovely_Girl", name: "Lovely Girl", style: "Warm", description: "Friendly and charming", gender: "female" },
+  { id: "Sweet_Girl_2", name: "Sweet Girl", style: "Gentle", description: "Soft and delicate", gender: "female" },
+  { id: "Exuberant_Girl", name: "Exuberant Girl", style: "Vibrant", description: "Full of life and enthusiasm", gender: "female" },
+  { id: "Abbess", name: "Abbess", style: "Solemn", description: "Dignified and reverent", gender: "female" },
+  // Male voices
+  { id: "Deep_Voice_Man", name: "Deep Voice Man", style: "Cinematic", description: "Rich, deep narration voice", gender: "male" },
+  { id: "Friendly_Person", name: "Friendly Person", style: "Conversational", description: "Warm and approachable", gender: "male" },
+  { id: "Casual_Guy", name: "Casual Guy", style: "Relaxed", description: "Easy-going and natural", gender: "male" },
+  { id: "Patient_Man", name: "Patient Man", style: "Calm", description: "Steady and reassuring", gender: "male" },
+  { id: "Young_Knight", name: "Young Knight", style: "Heroic", description: "Bold and adventurous", gender: "male" },
+  { id: "Determined_Man", name: "Determined Man", style: "Strong", description: "Confident and resolute", gender: "male" },
+  { id: "Decent_Boy", name: "Decent Boy", style: "Youthful", description: "Clear and genuine", gender: "male" },
+  { id: "Imposing_Manner", name: "Imposing Manner", style: "Commanding", description: "Powerful and authoritative", gender: "male" },
+  { id: "Elegant_Man", name: "Elegant Man", style: "Refined", description: "Polished and sophisticated", gender: "male" },
 ];
 
 const VALID_VOICE_IDS = new Set(VOICE_OPTIONS.map((v) => v.id));
@@ -43,19 +56,14 @@ export function isValidVoiceId(id: string): boolean {
   return VALID_VOICE_IDS.has(id);
 }
 
-function getNovitaVoiceId(voiceId: string): string {
-  const voice = getVoiceById(voiceId);
-  return voice?.novitaVoiceId || "James";
-}
-
 // ---------------------------------------------------------------------------
-// Novita TTS: Submit + Poll
+// Novita MiniMax Speech-02-HD: Submit + Poll
 // ---------------------------------------------------------------------------
 
-async function submitNovitaTTS(
+async function submitMiniMaxTTS(
   apiKey: string,
   text: string,
-  novitaVoiceId: string
+  voiceId: string
 ): Promise<string> {
   const resp = await fetch(NOVITA_TTS_URL, {
     method: "POST",
@@ -64,11 +72,19 @@ async function submitNovitaTTS(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      request: {
-        voice_id: novitaVoiceId,
-        language: "en-US",
-        texts: [text],
+      text,
+      voice_setting: {
         speed: 1.0,
+        vol: 1.0,
+        pitch: 0,
+        voice_id: voiceId,
+        emotion: "neutral",
+      },
+      audio_setting: {
+        sample_rate: 48000,
+        bitrate: 128000,
+        format: "mp3",
+        channel: 1,
       },
     }),
   });
@@ -96,7 +112,7 @@ async function pollNovitaTTS(
     const status = data.task?.status;
 
     if (status === "TASK_STATUS_SUCCEED") {
-      const audioUrl = data.audios?.[0]?.audio_url;
+      const audioUrl = data.audios?.[0]?.audio_url || data.audio?.audio_url;
       if (!audioUrl) {
         throw new Error(`${LOG} TTS succeeded but no audio URL in response`);
       }
@@ -132,10 +148,9 @@ export async function generateSceneNarrationUrl(
     throw new Error(`${LOG} narrationText must not be empty`);
   }
 
-  const novitaVoiceId = getNovitaVoiceId(voiceId);
-  console.log(`${LOG} Submitting TTS for voice "${novitaVoiceId}"...`);
+  console.log(`${LOG} Submitting MiniMax HD TTS for voice "${voiceId}"...`);
 
-  const taskId = await submitNovitaTTS(novitaApiKey, narrationText, novitaVoiceId);
+  const taskId = await submitMiniMaxTTS(novitaApiKey, narrationText, voiceId);
   console.log(`${LOG} TTS task submitted: ${taskId}`);
 
   const audioUrl = await pollNovitaTTS(novitaApiKey, taskId);

@@ -19,6 +19,7 @@ import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
 import { encrypt } from "../social-connect/encryption";
 import { deductCredits, refundCredits } from "../credits/creditService";
 import { CreditActionType } from "../credits/creditConfig";
+import { getSecureSetting } from "../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // Website scraping helper
@@ -673,12 +674,10 @@ export const chatWithBot: ChatWithBot<
   if (!chatbot) throw new HttpError(404, "Chatbot not found");
   if (chatbot.userId !== context.user.id) throw new HttpError(403, "Not authorized");
 
-  // Fetch OpenAI API key from Setting table
-  const apiKeySetting = await context.entities.Setting.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
+  // Fetch OpenAI API key from Setting table (decrypts if encrypted)
+  const openaiApiKey = await getSecureSetting(context.entities.Setting, "platform.openai_api_key");
 
-  if (!apiKeySetting?.value) {
+  if (!openaiApiKey) {
     throw new HttpError(
       400,
       "OpenAI API key not configured. Go to Admin Settings to add your API key."
@@ -725,7 +724,7 @@ export const chatWithBot: ChatWithBot<
   await deductCredits(prisma, context.user.id, CreditActionType.ChatbotMessage, { chatbotId: args.chatbotId });
 
   // Create OpenAI client dynamically (key from DB, not env)
-  const openai = new OpenAI({ apiKey: apiKeySetting.value });
+  const openai = new OpenAI({ apiKey: openaiApiKey });
 
   try {
     const completion = await openai.chat.completions.create({

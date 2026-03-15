@@ -1,25 +1,25 @@
 import {
-  Calendar,
   BookOpenText,
   BookText,
+  ClipboardList,
+  Download,
   FolderOpen,
   Gift,
+  Megaphone,
   Newspaper,
-  ChevronDown,
-  ChevronUp,
   LayoutDashboard,
-  LayoutTemplate,
   Link2,
+  Palette,
   Puzzle,
   Settings,
   Sheet,
   X,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router";
 import Logo from "../../client/static/logo.png";
+import { useBranding } from "../../branding/BrandingContext";
 import { cn } from "../../client/utils";
-import SidebarLinkGroup from "./SidebarLinkGroup";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -29,6 +29,7 @@ interface SidebarProps {
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const location = useLocation();
   const { pathname } = location;
+  const branding = useBranding();
 
   const trigger = useRef<any>(null);
   const sidebar = useRef<any>(null);
@@ -87,7 +88,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
         <NavLink to="/">
-          <img src={Logo} alt="Logo" className="h-9 w-auto" />
+          <img src={branding.logoUrl || Logo} alt={branding.appName} className="h-9 w-auto" onError={(e) => { (e.target as HTMLImageElement).src = Logo; }} />
         </NavLink>
 
         <button
@@ -171,6 +172,26 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
               </li>
               {/* <!-- Menu Item Settings --> */}
 
+              {/* <!-- Menu Item Branding --> */}
+              <li>
+                <NavLink
+                  to="/admin/branding"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive,
+                      },
+                    )
+                  }
+                >
+                  <Palette />
+                  Branding
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Branding --> */}
+
               {/* <!-- Menu Item Extension Settings --> */}
               <li>
                 <NavLink
@@ -209,6 +230,26 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 </NavLink>
               </li>
               {/* <!-- Menu Item Affiliate --> */}
+
+              {/* <!-- Menu Item Announcements --> */}
+              <li>
+                <NavLink
+                  to="/admin/announcements"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive,
+                      },
+                    )
+                  }
+                >
+                  <Megaphone />
+                  Announcements
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Announcements --> */}
 
               {/* <!-- Menu Item Social Connect --> */}
               <li>
@@ -306,20 +347,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 </NavLink>
               </li>
               {/* <!-- Menu Item Docs --> */}
-            </ul>
-          </div>
 
-          {/* <!-- Others Group --> */}
-          <div>
-            <h3 className="text-muted-foreground mb-4 ml-4 text-sm font-semibold">
-              Extra Components
-            </h3>
-
-            <ul className="mb-6 flex flex-col gap-1.5">
-              {/* <!-- Menu Item Calendar --> */}
+              {/* <!-- Menu Item System Update --> */}
               <li>
                 <NavLink
-                  to="/admin/calendar"
+                  to="/admin/system-update"
                   end
                   className={({ isActive }) =>
                     cn(
@@ -330,70 +362,34 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                     )
                   }
                 >
-                  <Calendar />
-                  Calendar
+                  <Download size={20} />
+                  System Update
                 </NavLink>
               </li>
-              {/* <!-- Menu Item Calendar --> */}
+              {/* <!-- Menu Item System Update --> */}
 
-              {/* <!-- Menu Item Ui Elements --> */}
-              <SidebarLinkGroup
-                activeCondition={pathname === "/ui" || pathname.includes("ui")}
-              >
-                {(handleClick, open) => {
-                  return (
-                    <React.Fragment>
-                      <NavLink
-                        to="#"
-                        className={cn(
-                          "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
-                          {
-                            "bg-accent text-accent-foreground":
-                              pathname.includes("ui"),
-                          },
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          sidebarExpanded
-                            ? handleClick()
-                            : setSidebarExpanded(true);
-                        }}
-                      >
-                        <LayoutTemplate />
-                        UI Elements
-                        {open ? <ChevronUp /> : <ChevronDown />}
-                      </NavLink>
-                      {/* <!-- Dropdown Menu Start --> */}
-                      <div
-                        className={cn("translate transform overflow-hidden", {
-                          hidden: !open,
-                        })}
-                      >
-                        <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
-                          <li>
-                            <NavLink
-                              to="/admin/ui/buttons"
-                              end
-                              className={({ isActive }) =>
-                                cn(
-                                  "text-muted-foreground hover:text-accent group relative flex items-center gap-2.5 rounded-md px-4 font-medium duration-300 ease-in-out",
-                                  { "text-accent!": isActive },
-                                )
-                              }
-                            >
-                              Buttons
-                            </NavLink>
-                          </li>
-                        </ul>
-                      </div>
-                      {/* <!-- Dropdown Menu End --> */}
-                    </React.Fragment>
-                  );
-                }}
-              </SidebarLinkGroup>
-              {/* <!-- Menu Item Ui Elements --> */}
+              {/* <!-- Menu Item Activity Log --> */}
+              <li>
+                <NavLink
+                  to="/admin/activity"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium duration-300 ease-in-out",
+                      {
+                        "bg-accent text-accent-foreground": isActive,
+                      },
+                    )
+                  }
+                >
+                  <ClipboardList size={20} />
+                  Activity Log
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Activity Log --> */}
             </ul>
           </div>
+
         </nav>
         {/* <!-- Sidebar Menu --> */}
       </div>

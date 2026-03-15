@@ -14,6 +14,8 @@ import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
 import { getExtensionById, getEnabledExtensions, EXTENSION_REGISTRY } from "./registry";
 import { ensureStripeCustomer, createStripeCheckoutSession } from "../payment/stripe/checkoutUtils";
 import { updateUserPaymentProcessorUserId } from "../payment/user";
+import { isSensitiveKey, setSecureSetting } from "../server/settingEncryption";
+import { logAudit } from "../server/auditLog";
 
 //#region Admin Operations
 
@@ -69,11 +71,22 @@ export const upsertSetting: UpsertSetting<UpsertSettingInput, Setting> = async (
     rawArgs
   );
 
-  return context.entities.Setting.upsert({
+  // Encrypt sensitive API keys before storing
+  if (isSensitiveKey(key)) {
+    await setSecureSetting(context.entities.Setting, key, value);
+    logAudit({ userId: context.user.id, action: "setting.update", resource: `setting:${key}` });
+    const result = await context.entities.Setting.findUnique({ where: { key } });
+    return result!;
+  }
+
+  const result = await context.entities.Setting.upsert({
     where: { key },
     create: { key, value },
     update: { value },
   });
+
+  logAudit({ userId: context.user.id, action: "setting.update", resource: `setting:${key}` });
+  return result;
 };
 
 //#endregion
@@ -141,7 +154,7 @@ export const toggleExtension: ToggleExtension<
     }
   }
 
-  return context.entities.UserExtension.upsert({
+  const result = await context.entities.UserExtension.upsert({
     where: {
       userId_extensionId: {
         userId: context.user.id,
@@ -155,6 +168,14 @@ export const toggleExtension: ToggleExtension<
     },
     update: { isActive },
   });
+
+  logAudit({
+    userId: context.user.id,
+    action: isActive ? "extension.activate" : "extension.deactivate",
+    resource: `extension:${extensionId}`,
+  });
+
+  return result;
 };
 
 //#endregion

@@ -17,6 +17,7 @@ import {
 } from "./spyfuClient";
 import { deductCredits, refundCredits } from "../../credits/creditService";
 import { CreditActionType } from "../../credits/creditConfig";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // Extension guard
@@ -43,16 +44,14 @@ async function ensureExtensionActive(
 // ---------------------------------------------------------------------------
 
 async function getSpyfuApiKey(settingEntity: any): Promise<string> {
-  const setting = await settingEntity.findUnique({
-    where: { key: "platform.spyfu_api_key" },
-  });
-  if (!setting?.value) {
+  const apiKey = await getSecureSetting(settingEntity, "platform.spyfu_api_key");
+  if (!apiKey) {
     throw new HttpError(
       400,
       "SpyFu API key not configured. Go to Admin Settings to add it.",
     );
   }
-  return setting.value;
+  return apiKey;
 }
 
 // ---------------------------------------------------------------------------
@@ -264,18 +263,16 @@ export const deleteSeoKeyword: DeleteSeoKeyword<any, any> = async (
 // ---------------------------------------------------------------------------
 
 async function getOpenAIClient(settingEntity: any): Promise<OpenAI> {
-  const apiKeySetting = await settingEntity.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
+  const apiKey = await getSecureSetting(settingEntity, "platform.openai_api_key");
 
-  if (!apiKeySetting?.value) {
+  if (!apiKey) {
     throw new HttpError(
       400,
       "OpenAI API key is not configured. Please set it in Admin Settings.",
     );
   }
 
-  return new OpenAI({ apiKey: apiKeySetting.value });
+  return new OpenAI({ apiKey });
 }
 
 // ---------------------------------------------------------------------------

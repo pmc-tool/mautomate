@@ -11,6 +11,7 @@ import { messengerAdapter } from "./channels/messengerAdapter";
 import { instagramAdapter } from "./channels/instagramAdapter";
 import type { ChannelAdapter, ChannelCredentials } from "./channels/types";
 import { decrypt } from "../../social-connect/encryption";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // PgBoss job handler
@@ -79,11 +80,9 @@ export async function processAiReply(
     }
   }
 
-  // 6. Load OpenAI API key
-  const apiKeySetting = await entities.Setting.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
-  if (!apiKeySetting?.value) {
+  // 6. Load OpenAI API key (decrypts if encrypted)
+  const openaiApiKey = await getSecureSetting(entities.Setting, "platform.openai_api_key");
+  if (!openaiApiKey) {
     console.error("[Inbox AI] No OpenAI API key configured");
     return;
   }
@@ -120,7 +119,7 @@ export async function processAiReply(
   }
 
   // 10. Call OpenAI
-  const openai = new OpenAI({ apiKey: apiKeySetting.value });
+  const openai = new OpenAI({ apiKey: openaiApiKey });
 
   try {
     const completion = await openai.chat.completions.create({

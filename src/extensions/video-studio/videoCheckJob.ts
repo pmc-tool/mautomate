@@ -9,6 +9,7 @@ import {
   CreditActionType,
   CREDIT_COSTS,
 } from "../../credits/creditConfig";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 const FAL_KEY_SETTING = "ext.video-studio.fal_api_key";
 
@@ -19,17 +20,13 @@ function getCreditAction(tier: string): CreditActionType {
 }
 
 export async function videoStatusCheck(_args: unknown, context: any) {
-  // Get the fal.ai API key
-  const setting = await context.entities.Setting.findUnique({
-    where: { key: FAL_KEY_SETTING },
-  });
+  // Get the fal.ai API key (decrypts if encrypted)
+  const apiKey = await getSecureSetting(context.entities.Setting, FAL_KEY_SETTING);
 
-  if (!setting?.value) {
+  if (!apiKey) {
     // No API key configured — nothing to poll
     return;
   }
-
-  const apiKey = setting.value;
 
   // Find all processing generations
   const processing = await context.entities.VideoGeneration.findMany({

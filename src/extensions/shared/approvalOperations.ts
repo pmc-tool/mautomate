@@ -19,6 +19,7 @@ import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import { deductCredits, refundCredits } from "../../credits/creditService";
 import { CreditActionType } from "../../credits/creditConfig";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // Extension guard — user needs at least one agent extension active
@@ -117,18 +118,16 @@ async function createRevision(
 // ---------------------------------------------------------------------------
 
 async function getOpenAIClient(settingEntity: any): Promise<OpenAI> {
-  const setting = await settingEntity.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
+  const apiKey = await getSecureSetting(settingEntity, "platform.openai_api_key");
 
-  if (!setting?.value) {
+  if (!apiKey) {
     throw new HttpError(
       400,
       "OpenAI API key not configured. Go to Admin Settings to add your API key."
     );
   }
 
-  return new OpenAI({ apiKey: setting.value });
+  return new OpenAI({ apiKey });
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +198,7 @@ const movePostSchema = z.object({
   postType: postTypeEnum,
   postId: z.string().uuid(),
   targetStatus: z.enum(["draft", "approved", "scheduled", "published"]),
+  scheduledAt: z.string().optional(),
 });
 
 const getPostRevisionsSchema = z.object({
@@ -693,10 +693,16 @@ export const movePost: MovePost<
     updateData.scheduledAt = null;
   }
 
-  // Ensure scheduledAt exists when moving to "scheduled"
+  // Set scheduledAt when moving to "scheduled"
   if (args.targetStatus === "scheduled") {
-    if (!post.scheduledAt) {
-      // Default to tomorrow at 9:00 AM
+    if (args.scheduledAt) {
+      const scheduledAt = new Date(args.scheduledAt);
+      if (isNaN(scheduledAt.getTime())) {
+        throw new HttpError(400, "Invalid scheduledAt date");
+      }
+      updateData.scheduledAt = scheduledAt;
+    } else if (!post.scheduledAt) {
+      // Fallback: default to tomorrow at 9:00 AM
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(9, 0, 0, 0);

@@ -17,6 +17,7 @@ import ContentTrendChart from "./components/ContentTrendChart";
 import ChannelPerformanceTable from "./components/ChannelPerformanceTable";
 import ActionQueue from "./components/ActionQueue";
 import DashboardFilterBar from "./components/DashboardFilterBar";
+import OnboardingChecklist from "./OnboardingChecklist";
 
 // ---------------------------------------------------------------------------
 // Skeleton loaders
@@ -142,6 +143,7 @@ export default function UserDashboardPage({ user }: { user: AuthUser }) {
 
   return (
     <UserDashboardLayout user={user}>
+      <OnboardingChecklist />
       <div className="space-y-6">
         {/* Header + Filters */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

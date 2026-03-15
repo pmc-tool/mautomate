@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { Component, useEffect, useMemo, type ReactNode } from "react";
 import { Outlet, useLocation } from "react-router";
 import { routes } from "wasp/client/router";
 import { Toaster } from "../client/components/ui/toaster";
@@ -9,6 +9,59 @@ import {
   marketingNavigationItems,
 } from "./components/NavBar/constants";
 import CookieConsentBanner from "./components/cookie-consent/Banner";
+import { BrandingProvider } from "../branding/BrandingContext";
+
+// ---------------------------------------------------------------------------
+// C2: Error Boundary — catches unhandled React errors
+// ---------------------------------------------------------------------------
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Report to server (fire-and-forget)
+    fetch("/api/error-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: error?.message,
+        stack: error?.stack,
+        component: info?.componentStack?.slice(0, 500),
+        url: window.location.href,
+      }),
+    }).catch(() => {});
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
+          <div className="max-w-md text-center">
+            <h1 className="mb-2 text-2xl font-bold">Something went wrong</h1>
+            <p className="mb-6 text-gray-400">
+              An unexpected error occurred. Please refresh the page to continue.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-white px-6 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * use this component to wrap all child components
@@ -79,23 +132,25 @@ export default function App() {
   }, [location]);
 
   return (
-    <>
-      <div className="bg-background text-foreground min-h-screen">
-        {isAdminDashboard || isUserDashboard ? (
-          <Outlet />
-        ) : (
-          <>
-            {shouldDisplayAppNavBar && (
-              <NavBar navigationItems={navigationItems} />
-            )}
-            <div className="mx-auto max-w-(--breakpoint-2xl)">
-              <Outlet />
-            </div>
-          </>
-        )}
-      </div>
-      <Toaster position="bottom-right" />
-      <CookieConsentBanner />
-    </>
+    <AppErrorBoundary>
+      <BrandingProvider>
+        <div className="bg-background text-foreground min-h-screen">
+          {isAdminDashboard || isUserDashboard ? (
+            <Outlet />
+          ) : (
+            <>
+              {shouldDisplayAppNavBar && (
+                <NavBar navigationItems={navigationItems} />
+              )}
+              <div className="mx-auto max-w-(--breakpoint-2xl)">
+                <Outlet />
+              </div>
+            </>
+          )}
+        </div>
+        <Toaster position="bottom-right" />
+        <CookieConsentBanner />
+      </BrandingProvider>
+    </AppErrorBoundary>
   );
 }

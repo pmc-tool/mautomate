@@ -121,6 +121,21 @@ export function SceneCard({ scene, onRegenerate, projectStatus }: SceneCardProps
         </div>
       )}
 
+      {/* Regenerate button for completed scenes */}
+      {isCompleted && (
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onRegenerate(scene.id)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Regenerate (30 credits)
+          </Button>
+        </div>
+      )}
+
       {/* Error + retry for failed scenes */}
       {isFailed && (
         <div className="mt-3 space-y-2">

@@ -1,7 +1,11 @@
 import { HttpError, prisma } from "wasp/server";
 import {
   CreditActionType,
+  CREDIT_COSTS,
+  getQualityTier,
+  getStoryCreditAction,
 } from "../../credits/creditConfig";
+import type { StoryQuality } from "../../credits/creditConfig";
 import {
   deductCredits,
   refundCredits,
@@ -18,19 +22,41 @@ import {
   submitI2V,
   checkStatus,
   resolutionToSize,
-  setVideoModel,
 } from "./novitaVideoClient";
 import {
   stitchStoryVideo as runStitch,
   cleanupTempDir,
-  extractReferenceFrame,
 } from "./stitchingService";
 import { STORY_VIDEOS_DIR } from "../../server/setup";
+import { getSecureSetting } from "../../server/settingEncryption";
+import crypto from "crypto";
 import fsPromises from "fs/promises";
 import path from "path";
 
 const EXTENSION_ID = "long-story-video";
 const LOG = "[generationOperations]";
+const MAX_PARALLEL_SCENES = 3;
+const WORDS_PER_SEC = 2.5;
+
+/**
+ * Trims narration text to fit within the actual video duration at natural speech rate.
+ */
+function trimNarrationToFit(narrationText: string, videoDuration: number): string {
+  if (!narrationText || !narrationText.trim()) return narrationText;
+  if (videoDuration <= 0) return narrationText;
+  const words = narrationText.trim().split(/\s+/);
+  const maxWords = Math.floor(videoDuration * WORDS_PER_SEC);
+  if (words.length <= maxWords) return narrationText;
+  const trimmed = words.slice(0, maxWords);
+  for (let i = trimmed.length - 1; i >= Math.floor(maxWords * 0.7); i--) {
+    if (/[.!?]$/.test(trimmed[i])) {
+      console.log(`${LOG} Trimmed narration from ${words.length} → ${i + 1} words to fit ${videoDuration}s video`);
+      return trimmed.slice(0, i + 1).join(" ");
+    }
+  }
+  console.log(`${LOG} Trimmed narration from ${words.length} → ${maxWords} words to fit ${videoDuration}s video`);
+  return trimmed.join(" ");
+}
 
 // ---------------------------------------------------------------------------
 // Extension guard
@@ -56,14 +82,14 @@ async function getSettingValue(
   settingEntity: any,
   key: string
 ): Promise<string> {
-  const setting = await settingEntity.findUnique({ where: { key } });
-  if (!setting || !setting.value) {
+  const value = await getSecureSetting(settingEntity, key);
+  if (!value) {
     throw new HttpError(
       500,
       `Missing required setting: "${key}". Please configure it in admin settings.`
     );
   }
-  return setting.value;
+  return value;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +112,98 @@ async function getOwnedProject(
     throw new HttpError(404, "Story project not found.");
   }
   return project;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Fire-and-forget stitching pipeline
+// ---------------------------------------------------------------------------
+
+async function runStitchingPipeline(
+  projectId: string,
+  project: any,
+  context: any
+): Promise<void> {
+  const subtitlesEnabled = (project.metadata as any)?.subtitlesEnabled ?? false;
+  const qualityTier = getQualityTier((project.quality || "low") as StoryQuality);
+
+  // Get OpenAI API key for Whisper subtitle alignment
+  let openaiApiKey: string | undefined;
+  try {
+    openaiApiKey = await getSecureSetting(context.entities.Setting, "platform.openai_api_key") || undefined;
+  } catch {
+    // Not critical — will fall back to proportional subtitles
+  }
+
+  // Fetch fresh scenes for stitching
+  const freshScenes = await context.entities.StoryScene.findMany({
+    where: { projectId },
+    orderBy: { sceneIndex: "asc" },
+  });
+
+  try {
+    const result = await runStitch({
+      projectId,
+      scenes: freshScenes.map((s: any) => ({
+        sceneIndex: s.sceneIndex,
+        videoUrl: s.videoUrl,
+        narrationUrl: s.narrationUrl,
+        narrationText: s.narrationText,
+        duration: s.duration,
+      })),
+      musicTrackId: project.musicTrackId || undefined,
+      musicMood: project.musicMood || undefined,
+      subtitlesEnabled,
+      resolution: qualityTier.resolution as "720p" | "1080p",
+      openaiApiKey,
+    });
+
+    // Copy final video to persistent serving directory
+    const destPath = path.join(STORY_VIDEOS_DIR, `${projectId}.mp4`);
+    await fsPromises.mkdir(STORY_VIDEOS_DIR, { recursive: true });
+    await fsPromises.copyFile(result.finalVideoPath, destPath);
+    console.log(`${LOG} Final video saved to: ${destPath}`);
+
+    // Clean up temp files
+    const workDir = result.finalVideoPath.replace(/\/final\.mp4$/, "");
+    await cleanupTempDir(workDir);
+
+    const downloadToken = crypto.randomBytes(32).toString("hex");
+    const finalVideoUrl = `/api/story-video/${projectId}.mp4?token=${downloadToken}`;
+
+    // Fetch fresh metadata to avoid overwriting concurrent updates
+    const freshProject = await context.entities.StoryProject.findUnique({
+      where: { id: projectId },
+      select: { metadata: true },
+    });
+    const freshMeta = (freshProject?.metadata as Record<string, unknown>) || {};
+    const updatedMeta = { ...freshMeta, downloadToken };
+
+    // Atomic guard: only mark completed if still stitching (prevents race with stuck recovery)
+    const completed = await context.entities.StoryProject.updateMany({
+      where: { id: projectId, status: "stitching" },
+      data: {
+        status: "completed",
+        finalVideoUrl,
+        metadata: updatedMeta,
+      },
+    });
+
+    if (completed.count > 0) {
+      console.log(`${LOG} Video stitching complete for project ${projectId} (${result.durationSec}s)`);
+    } else {
+      console.warn(`${LOG} Stitch finished but project ${projectId} is no longer in stitching status`);
+    }
+  } catch (err: any) {
+    console.error(`${LOG} Stitching failed for project ${projectId}:`, err.message);
+    // Atomic guard: only reset to narrated if still stitching
+    await context.entities.StoryProject.updateMany({
+      where: { id: projectId, status: "stitching" },
+      data: {
+        status: "narrated",
+        errorMessage: `Video stitching failed: ${err.message?.substring(0, 200)}. Click "Finalize Video" to retry.`,
+      },
+    }).catch(() => {});
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -136,8 +254,7 @@ export const generateStoryPlan = async (
     const plan = await planStory(
       project.prompt,
       project.targetDuration,
-      openaiApiKey,
-      project.referenceImageUrl || undefined
+      openaiApiKey
     );
 
     // Create StoryScene records from plan
@@ -249,12 +366,20 @@ export const updateStoryPlan = async (
   }
 
   // Validate each scene has sufficient content
+  const validDurations = [5, 10, 15];
+  const validShotTypes = ["single", "multi"];
   for (const scene of args.scenes) {
     if (!scene.visualPrompt || scene.visualPrompt.trim().length < 10) {
       throw new HttpError(400, `Scene ${scene.sceneIndex}: visualPrompt must be at least 10 characters.`);
     }
     if (!scene.narrationText || scene.narrationText.trim().length < 10) {
       throw new HttpError(400, `Scene ${scene.sceneIndex}: narrationText must be at least 10 characters.`);
+    }
+    if (!validDurations.includes(scene.duration)) {
+      throw new HttpError(400, `Scene ${scene.sceneIndex}: duration must be 5, 10, or 15 seconds.`);
+    }
+    if (!validShotTypes.includes(scene.shotType)) {
+      throw new HttpError(400, `Scene ${scene.sceneIndex}: shotType must be 'single' or 'multi'.`);
     }
   }
 
@@ -292,7 +417,7 @@ export const updateStoryPlan = async (
 };
 
 // ---------------------------------------------------------------------------
-// 3. startStoryGeneration
+// 3. startStoryGeneration — now submits up to 3 scenes in parallel
 // ---------------------------------------------------------------------------
 
 export const startStoryGeneration = async (
@@ -300,8 +425,7 @@ export const startStoryGeneration = async (
     projectId: string;
     voiceId: string;
     musicTrackId?: string;
-    resolution: "720p" | "1080p";
-    subtitlesEnabled?: boolean;
+    quality: "low" | "medium" | "high";
   },
   context: any
 ) => {
@@ -316,12 +440,6 @@ export const startStoryGeneration = async (
 
   if (project.status !== "planned") {
     throw new HttpError(400, "Generation can only start from 'planned' status.");
-  }
-
-  // Idempotency: prevent double-click double-charge
-  const alreadyGenerating = project.scenes.some((s: any) => s.status === "generating");
-  if (alreadyGenerating) {
-    throw new HttpError(409, "Generation is already in progress for this project.");
   }
 
   // Rate limit: max 3 concurrent generating/narrating/stitching projects per user
@@ -344,9 +462,29 @@ export const startStoryGeneration = async (
     throw new HttpError(400, "No scenes found. Generate a story plan first.");
   }
 
-  // Determine credit action based on scene count
-  const creditAction =
-    sceneCount <= 8 ? CreditActionType.StoryBasic : CreditActionType.StoryStandard;
+  // Atomic guard: transition planned → generating. Prevents double-click double-charge.
+  const transitioned = await context.entities.StoryProject.updateMany({
+    where: { id: args.projectId, status: "planned" },
+    data: { status: "generating" },
+  });
+  if (transitioned.count === 0) {
+    throw new HttpError(409, "Generation is already in progress for this project.");
+  }
+
+  // Validate quality input
+  const validQualities = ["low", "medium", "high"];
+  if (!validQualities.includes(args.quality)) {
+    throw new HttpError(400, `Invalid quality "${args.quality}". Must be low, medium, or high.`);
+  }
+
+  // Derive model + resolution from quality tier
+  const quality = args.quality || "low";
+  const tier = getQualityTier(quality);
+  const resolution = tier.resolution;
+  const videoModel = tier.model;
+
+  // Determine credit action based on quality + scene count
+  const creditAction = getStoryCreditAction(quality, sceneCount);
 
   // Get Novita API key
   const novitaApiKey = await getSettingValue(
@@ -354,91 +492,101 @@ export const startStoryGeneration = async (
     "ext.long-story-video.novita_api_key"
   );
 
-  // Load video model setting (default: wan2.1 for cost savings)
-  try {
-    const modelSetting = await context.entities.Setting.findUnique({
-      where: { key: "ext.long-story-video.video_model" },
-    });
-    if (modelSetting?.value) setVideoModel(modelSetting.value);
-  } catch {}
-
   // Deduct credits upfront
-  console.log(`${LOG} startStoryGeneration: deducting credits for user ${context.user.id}, action=${creditAction}, sceneCount=${sceneCount}`);
+  console.log(`${LOG} startStoryGeneration: deducting credits for user ${context.user.id}, action=${creditAction}, quality=${quality}, sceneCount=${sceneCount}`);
   try {
     await deductCredits(
       prisma,
       context.user.id,
       creditAction,
-      { projectId: args.projectId, sceneCount }
+      { projectId: args.projectId, sceneCount, quality }
     );
   } catch (err: any) {
     console.error(`${LOG} startStoryGeneration: deductCredits failed:`, err.message, err.statusCode || err.code);
     throw err;
   }
 
-  // Update project settings
-  await context.entities.StoryProject.update({
-    where: { id: args.projectId },
-    data: {
-      voiceId: args.voiceId,
-      musicTrackId: args.musicTrackId || null,
-      resolution: args.resolution,
-      status: "generating",
-      totalCredits: creditAction === CreditActionType.StoryBasic ? 150 : 300,
-      metadata: { subtitlesEnabled: args.subtitlesEnabled ?? false },
-      errorMessage: null,
-    },
-  });
-
-  // Submit first scene (index 0)
-  const firstScene = project.scenes.find((s: any) => s.sceneIndex === 0);
-  if (!firstScene) {
-    throw new HttpError(500, "First scene (index 0) not found.");
-  }
-
-  const size = resolutionToSize(args.resolution, "16:9");
-
-  let submitResult;
-  if (project.referenceImageUrl) {
-    // Use image-to-video for the first scene if reference image is provided
-    submitResult = await submitI2V(novitaApiKey, {
-      prompt: firstScene.visualPrompt,
-      duration: firstScene.duration as 5 | 10 | 15,
-      size,
-      shot_type: firstScene.shotType,
-      image_url: project.referenceImageUrl,
+  // Wrap remaining work in try-catch so we can refund credits on failure
+  try {
+    // Update project settings (status already set to "generating" by atomic guard above)
+    await context.entities.StoryProject.update({
+      where: { id: args.projectId },
+      data: {
+        voiceId: args.voiceId,
+        musicTrackId: args.musicTrackId || null,
+        resolution,
+        quality,
+        totalCredits: CREDIT_COSTS[creditAction],
+        metadata: { ...((project.metadata as Record<string, unknown>) || {}), subtitlesEnabled: true },
+        errorMessage: null,
+      },
     });
-  } else {
-    submitResult = await submitT2V(novitaApiKey, {
-      prompt: firstScene.visualPrompt,
-      duration: firstScene.duration as 5 | 10 | 15,
-      size,
-      shot_type: firstScene.shotType,
+
+    const size = resolutionToSize(resolution, "16:9");
+
+    // Submit up to MAX_PARALLEL_SCENES scenes concurrently
+    const pendingScenes = project.scenes
+      .filter((s: any) => s.status === "pending")
+      .sort((a: any, b: any) => a.sceneIndex - b.sceneIndex)
+      .slice(0, MAX_PARALLEL_SCENES);
+
+    for (const scene of pendingScenes) {
+      let submitResult;
+
+      // Use I2V only for the first scene if reference image exists
+      if (scene.sceneIndex === 0 && project.referenceImageUrl) {
+        submitResult = await submitI2V(novitaApiKey, {
+          prompt: scene.visualPrompt,
+          duration: scene.duration as 5 | 10 | 15,
+          size,
+          shot_type: scene.shotType,
+          image_url: project.referenceImageUrl,
+        }, videoModel);
+      } else {
+        submitResult = await submitT2V(novitaApiKey, {
+          prompt: scene.visualPrompt,
+          duration: scene.duration as 5 | 10 | 15,
+          size,
+          shot_type: scene.shotType,
+        }, videoModel);
+      }
+
+      await context.entities.StoryScene.update({
+        where: { id: scene.id },
+        data: {
+          status: "generating",
+          taskId: submitResult.task_id,
+        },
+      });
+
+      console.log(
+        `${LOG} Scene ${scene.sceneIndex} submitted as task ${submitResult.task_id} (quality=${quality}, model=${videoModel})`
+      );
+    }
+
+    console.log(
+      `${LOG} Story generation started for project ${args.projectId}: ${pendingScenes.length} scene(s) submitted in parallel`
+    );
+
+    // Return updated project
+    return context.entities.StoryProject.findUnique({
+      where: { id: args.projectId },
+      include: { scenes: { orderBy: { sceneIndex: "asc" } } },
     });
+  } catch (err: any) {
+    // Refund credits on failure
+    try {
+      await refundCredits(prisma, context.user.id, creditAction, `Generation failed to start: ${err.message}`);
+      console.log(`${LOG} Refunded credits after generation start failure`);
+    } catch (refundErr: any) {
+      console.error(`${LOG} Failed to refund credits:`, refundErr.message);
+    }
+    throw err instanceof HttpError ? err : new HttpError(500, `Failed to start generation: ${err.message}`);
   }
-
-  // Update first scene with task ID
-  await context.entities.StoryScene.update({
-    where: { id: firstScene.id },
-    data: {
-      status: "generating",
-      taskId: submitResult.task_id,
-    },
-  });
-
-  console.log(
-    `${LOG} Story generation started for project ${args.projectId}: scene 0 submitted as task ${submitResult.task_id}`
-  );
-
-  // Return updated project
-  return context.entities.StoryProject.findUnique({
-    where: { id: args.projectId },
-    include: { scenes: { orderBy: { sceneIndex: "asc" } } },
-  });
 };
 
 // ---------------------------------------------------------------------------
-// 4. regenerateScene
+// 4. regenerateScene — now supports completed scenes too
 // ---------------------------------------------------------------------------
 
 export const regenerateScene = async (
@@ -458,6 +606,11 @@ export const regenerateScene = async (
     throw new HttpError(404, "Scene not found.");
   }
 
+  // Allow regeneration of failed OR completed scenes
+  if (!["failed", "completed"].includes(scene.status)) {
+    throw new HttpError(400, "Only failed or completed scenes can be regenerated.");
+  }
+
   // Deduct credits for scene regeneration
   await deductCredits(
     prisma,
@@ -467,41 +620,58 @@ export const regenerateScene = async (
   );
 
   // Get Novita API key
-  const novitaApiKey = await getSettingValue(
-    context.entities.Setting,
-    "ext.long-story-video.novita_api_key"
-  );
+  let novitaApiKey: string;
+  try {
+    novitaApiKey = await getSettingValue(
+      context.entities.Setting,
+      "ext.long-story-video.novita_api_key"
+    );
+  } catch (apiKeyErr: any) {
+    // Refund credits if we can't get the API key
+    try {
+      await refundCredits(prisma, context.user.id, CreditActionType.StorySceneRegen, `API key error: ${apiKeyErr.message}`);
+    } catch {}
+    throw apiKeyErr;
+  }
 
-  const size = resolutionToSize(
-    (scene.project.resolution || "720p") as "720p" | "1080p",
-    "16:9"
-  );
+  const qualityTier = getQualityTier((scene.project.quality || "low") as any);
+  const size = resolutionToSize(qualityTier.resolution, "16:9");
 
-  // Use T2V for all scenes (I2V requires image URL, not video URL)
-  const submitResult = await submitT2V(novitaApiKey, {
-    prompt: scene.visualPrompt,
-    duration: scene.duration as 5 | 10 | 15,
-    size,
-    shot_type: scene.shotType,
-  });
+  try {
+    const submitResult = await submitT2V(novitaApiKey, {
+      prompt: scene.visualPrompt,
+      duration: scene.duration as 5 | 10 | 15,
+      size,
+      shot_type: scene.shotType,
+    }, qualityTier.model);
 
-  // Update scene
-  const updated = await context.entities.StoryScene.update({
-    where: { id: args.sceneId },
-    data: {
-      status: "generating",
-      taskId: submitResult.task_id,
-      videoUrl: null,
-      errorMessage: null,
-      progress: 0,
-    },
-  });
+    // Update scene
+    const updated = await context.entities.StoryScene.update({
+      where: { id: args.sceneId },
+      data: {
+        status: "generating",
+        taskId: submitResult.task_id,
+        videoUrl: null,
+        errorMessage: null,
+        progress: 0,
+      },
+    });
 
-  console.log(
-    `${LOG} Scene ${args.sceneId} regeneration submitted as task ${submitResult.task_id}`
-  );
+    console.log(
+      `${LOG} Scene ${args.sceneId} regeneration submitted as task ${submitResult.task_id}`
+    );
 
-  return updated;
+    return updated;
+  } catch (submitErr: any) {
+    // Refund credits on Novita submit failure
+    try {
+      await refundCredits(prisma, context.user.id, CreditActionType.StorySceneRegen, `Scene regen submit failed: ${submitErr.message}`);
+      console.log(`${LOG} Refunded credits after scene regen submit failure`);
+    } catch (refundErr: any) {
+      console.error(`${LOG} Failed to refund credits after scene regen failure:`, refundErr.message);
+    }
+    throw new HttpError(500, `Failed to regenerate scene: ${submitErr.message}`);
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -552,12 +722,13 @@ export const generateNarration = async (
     throw new HttpError(400, "Project does not have a valid voice ID configured.");
   }
 
-  // Prepare scenes for narration — skip scenes that already have narration
+  // Prepare scenes for narration — skip scenes that already have narration or empty text
+  // Trim narration text to fit actual video duration (prevents atempo overflow)
   const scenesForNarration = project.scenes
-    .filter((s: any) => !s.narrationUrl)
+    .filter((s: any) => !s.narrationUrl && s.narrationText?.trim())
     .map((s: any) => ({
       id: s.id,
-      narrationText: s.narrationText,
+      narrationText: trimNarrationToFit(s.narrationText, s.duration),
     }));
 
   if (scenesForNarration.length === 0) {
@@ -634,7 +805,7 @@ export const generateNarration = async (
 };
 
 // ---------------------------------------------------------------------------
-// 6. stitchStoryVideo — FFmpeg stitching pipeline
+// 6. stitchStoryVideo — FFmpeg stitching pipeline (idempotent)
 // ---------------------------------------------------------------------------
 
 export const stitchStoryVideo = async (
@@ -672,75 +843,28 @@ export const stitchStoryVideo = async (
     );
   }
 
-  // Mark as stitching
-  await context.entities.StoryProject.update({
-    where: { id: args.projectId },
+  // Idempotent guard: only transition to "stitching" if currently "narrated"
+  // Prevents double-click from launching two FFmpeg processes
+  const transitioned = await context.entities.StoryProject.updateMany({
+    where: { id: args.projectId, status: "narrated" },
     data: { status: "stitching", errorMessage: null },
   });
 
-  try {
-    const subtitlesEnabled = (project.metadata as any)?.subtitlesEnabled ?? false;
-
-    const result = await runStitch({
-      projectId: args.projectId,
-      scenes: project.scenes.map((s: any) => ({
-        sceneIndex: s.sceneIndex,
-        videoUrl: s.videoUrl,
-        narrationUrl: s.narrationUrl,
-        narrationText: s.narrationText,
-        duration: s.duration,
-      })),
-      musicTrackId: project.musicTrackId || undefined,
-      musicMood: project.musicMood || undefined,
-      subtitlesEnabled,
-      resolution: (project.resolution || "720p") as "720p" | "1080p",
-    });
-
-    // Copy final video to persistent serving directory
-    const destPath = path.join(STORY_VIDEOS_DIR, `${args.projectId}.mp4`);
-    await fsPromises.mkdir(STORY_VIDEOS_DIR, { recursive: true });
-    await fsPromises.copyFile(result.finalVideoPath, destPath);
-    console.log(`${LOG} Final video saved to: ${destPath}`);
-
-    // Build serving URL (relative path — served by Express middleware)
-    const finalVideoUrl = `/api/story-video/${args.projectId}.mp4`;
-
-    // Clean up temp files
-    const workDir = result.finalVideoPath.replace(/\/final\.mp4$/, "");
-    await cleanupTempDir(workDir);
-
-    const updated = await context.entities.StoryProject.update({
-      where: { id: args.projectId },
-      data: {
-        status: "completed",
-        finalVideoUrl,
-      },
-      include: { scenes: { orderBy: { sceneIndex: "asc" } } },
-    });
-
-    console.log(
-      `${LOG} Video stitching complete for project ${args.projectId} (${result.durationSec}s)`
-    );
-
-    return updated;
-  } catch (err: any) {
-    console.error(`${LOG} Stitching failed for project ${args.projectId}:`, err.message);
-
-    // Set to "narrated" so user can retry the Finalize button
-    await context.entities.StoryProject.update({
-      where: { id: args.projectId },
-      data: {
-        status: "narrated",
-        errorMessage: `Video stitching failed: ${err.message?.substring(0, 200)}. Click "Finalize Video" to retry.`,
-      },
-    });
-
-    throw new HttpError(500, `Video stitching failed: ${err.message}`);
+  if (transitioned.count === 0) {
+    // Already stitching or in another state — return current project
+    console.log(`${LOG} Stitch request for ${args.projectId} ignored — not in 'narrated' status`);
+    return project;
   }
+
+  // Fire-and-forget: run stitching in background
+  runStitchingPipeline(args.projectId, project, context).catch(() => {});
+
+  // Return immediately — client polls via getStoryProject (refetchInterval: 4s)
+  return project;
 };
 
 // ---------------------------------------------------------------------------
-// 7. checkStoryStatus
+// 7. checkStoryStatus — with parallel scene submission
 // ---------------------------------------------------------------------------
 
 export const checkStoryStatus = async (
@@ -756,6 +880,20 @@ export const checkStoryStatus = async (
     context.user.id
   );
 
+  // Fix: recover from stuck stitching state (>10 minutes)
+  if (project.status === "stitching") {
+    const stitchAge = Date.now() - new Date(project.updatedAt).getTime();
+    if (stitchAge > 10 * 60 * 1000) { // 10 minutes
+      console.warn(`${LOG} Project ${args.projectId} stuck in stitching for ${Math.round(stitchAge / 60000)}m — resetting to narrated`);
+      await context.entities.StoryProject.update({
+        where: { id: args.projectId },
+        data: { status: "narrated", errorMessage: "Stitching timed out. Click Finalize Video to retry." },
+      });
+    }
+    // Return current project state (client polls will pick up the change)
+    return project;
+  }
+
   if (project.status !== "generating") {
     // Nothing to poll if not actively generating
     return project;
@@ -766,18 +904,12 @@ export const checkStoryStatus = async (
     "ext.long-story-video.novita_api_key"
   );
 
-  // Load video model setting
-  try {
-    const modelSetting = await context.entities.Setting.findUnique({
-      where: { key: "ext.long-story-video.video_model" },
-    });
-    if (modelSetting?.value) setVideoModel(modelSetting.value);
-  } catch {}
+  // Derive model + resolution from project quality
+  const projectQuality = (project.quality || "low") as any;
+  const qualityTierInfo = getQualityTier(projectQuality);
+  const videoModel = qualityTierInfo.model;
 
-  const size = resolutionToSize(
-    (project.resolution || "720p") as "720p" | "1080p",
-    "16:9"
-  );
+  const size = resolutionToSize(qualityTierInfo.resolution, "16:9");
 
   // Poll each scene that is currently generating
   const generatingScenes = project.scenes.filter(
@@ -785,39 +917,46 @@ export const checkStoryStatus = async (
   );
 
   // Recovery: if no scenes are generating but project is still "generating",
-  // find the next pending scene and submit it using the last completed scene's video
+  // find the next pending scene and submit it
   if (generatingScenes.length === 0) {
     const completedScenes = project.scenes
       .filter((s: any) => s.status === "completed" && s.videoUrl)
       .sort((a: any, b: any) => b.sceneIndex - a.sceneIndex);
-    const nextPending = project.scenes
+    const pendingScenes = project.scenes
       .filter((s: any) => s.status === "pending")
-      .sort((a: any, b: any) => a.sceneIndex - b.sceneIndex)[0];
+      .sort((a: any, b: any) => a.sceneIndex - b.sceneIndex);
 
-    if (nextPending && completedScenes.length > 0) {
-      console.log(`${LOG} Recovery: submitting stuck pending scene ${nextPending.sceneIndex} via T2V`);
-      try {
-        const recoveryResult = await submitT2V(novitaApiKey, {
-          prompt: nextPending.visualPrompt,
-          duration: nextPending.duration as 5 | 10 | 15,
-          size,
-          shot_type: nextPending.shotType,
-        });
-        await context.entities.StoryScene.update({
-          where: { id: nextPending.id },
-          data: { status: "generating", taskId: recoveryResult.task_id, errorMessage: null },
-        });
-        console.log(`${LOG} Recovery: scene ${nextPending.sceneIndex} submitted as task ${recoveryResult.task_id}`);
-      } catch (submitErr: any) {
-        const isFatal = submitErr.message?.includes("NOT_ENOUGH_BALANCE") || submitErr.message?.includes("403");
-        if (isFatal) {
-          await context.entities.StoryProject.update({
-            where: { id: args.projectId },
-            data: { status: "failed", errorMessage: "Novita AI account has insufficient balance. Please top up at novita.ai and retry." },
+    // Submit up to MAX_PARALLEL_SCENES pending scenes
+    const toSubmit = pendingScenes.slice(0, MAX_PARALLEL_SCENES);
+
+    if (toSubmit.length > 0 && completedScenes.length > 0) {
+      for (const nextPending of toSubmit) {
+        console.log(`${LOG} Recovery: submitting stuck pending scene ${nextPending.sceneIndex} via T2V`);
+        try {
+          const recoveryResult = await submitT2V(novitaApiKey, {
+            prompt: nextPending.visualPrompt,
+            duration: nextPending.duration as 5 | 10 | 15,
+            size,
+            shot_type: nextPending.shotType,
+          }, videoModel);
+          // Atomic guard: only update if still pending
+          await context.entities.StoryScene.updateMany({
+            where: { id: nextPending.id, status: "pending" },
+            data: { status: "generating", taskId: recoveryResult.task_id, errorMessage: null },
           });
-          console.error(`${LOG} Fatal: Novita balance exhausted for project ${args.projectId}`);
-        } else {
-          console.error(`${LOG} Recovery submit failed (will retry):`, submitErr.message);
+          console.log(`${LOG} Recovery: scene ${nextPending.sceneIndex} submitted as task ${recoveryResult.task_id}`);
+        } catch (submitErr: any) {
+          const isFatal = submitErr.message?.includes("NOT_ENOUGH_BALANCE") || submitErr.message?.includes("403");
+          if (isFatal) {
+            await context.entities.StoryProject.update({
+              where: { id: args.projectId },
+              data: { status: "failed", errorMessage: "Novita AI account has insufficient balance. Please top up at novita.ai and retry." },
+            });
+            console.error(`${LOG} Fatal: Novita balance exhausted for project ${args.projectId}`);
+            break;
+          } else {
+            console.error(`${LOG} Recovery submit failed (will retry):`, submitErr.message);
+          }
         }
       }
     }
@@ -836,7 +975,8 @@ export const checkStoryStatus = async (
       const result = await checkStatus(novitaApiKey, scene.taskId);
 
       if (result.status === "completed" && result.videoUrl) {
-        // Scene completed
+        // Scene completed — duration probing is handled by the cron job (storyCheckJob)
+        // to avoid blocking this user-facing endpoint (ffprobe on remote URL can take 20s)
         await context.entities.StoryScene.update({
           where: { id: scene.id },
           data: {
@@ -850,76 +990,50 @@ export const checkStoryStatus = async (
           `${LOG} Scene ${scene.id} (index ${scene.sceneIndex}) completed`
         );
 
-        // Extract reference frame from scene 0 for character consistency
-        if (scene.sceneIndex === 0 && result.videoUrl && !project.referenceImageUrl) {
-          try {
-            const refImagePath = path.join(STORY_VIDEOS_DIR, `${args.projectId}.jpg`);
-            await fsPromises.mkdir(STORY_VIDEOS_DIR, { recursive: true });
-            await extractReferenceFrame(result.videoUrl, refImagePath, 2);
-            const refImageUrl = `/api/story-video/${args.projectId}.jpg`;
-            await context.entities.StoryProject.update({
-              where: { id: args.projectId },
-              data: { referenceImageUrl: refImageUrl },
-            });
-            project.referenceImageUrl = refImageUrl;
-            console.log(`${LOG} Reference frame extracted for project ${args.projectId}: ${refImageUrl}`);
-          } catch (refErr: any) {
-            console.warn(`${LOG} Failed to extract reference frame (will use T2V): ${refErr.message}`);
-          }
-        }
+        // Submit next pending scene(s) to maintain MAX_PARALLEL_SCENES in-flight
+        const currentGenerating = project.scenes.filter(
+          (s: any) => s.status === "generating" && s.id !== scene.id
+        ).length;
+        const slotsAvailable = MAX_PARALLEL_SCENES - currentGenerating;
 
-        // Submit next scene if available
-        const nextScene = project.scenes.find(
-          (s: any) => s.sceneIndex === scene.sceneIndex + 1 && s.status === "pending"
-        );
+        if (slotsAvailable > 0) {
+          const nextPendingScenes = project.scenes
+            .filter((s: any) => s.status === "pending")
+            .sort((a: any, b: any) => a.sceneIndex - b.sceneIndex)
+            .slice(0, slotsAvailable);
 
-        if (nextScene) {
-          let nextSubmitResult;
-
-          // Use I2V with reference image for character consistency (scenes 1+)
-          const publicRefUrl = project.referenceImageUrl
-            ? `https://mautomate.ai${project.referenceImageUrl}`
-            : null;
-
-          if (publicRefUrl) {
-            try {
-              console.log(`${LOG} Using I2V with reference image for scene ${nextScene.sceneIndex}`);
-              nextSubmitResult = await submitI2V(novitaApiKey, {
-                prompt: nextScene.visualPrompt,
-                duration: nextScene.duration as 5 | 10 | 15,
-                size,
-                shot_type: nextScene.shotType,
-                image_url: publicRefUrl,
-              });
-            } catch (i2vErr: any) {
-              console.warn(`${LOG} I2V failed, falling back to T2V: ${i2vErr.message}`);
-              nextSubmitResult = await submitT2V(novitaApiKey, {
-                prompt: nextScene.visualPrompt,
-                duration: nextScene.duration as 5 | 10 | 15,
-                size,
-                shot_type: nextScene.shotType,
-              });
+          for (const nextScene of nextPendingScenes) {
+            // Atomic guard: only submit if still pending
+            const freshNext = await context.entities.StoryScene.findUnique({ where: { id: nextScene.id } });
+            if (!freshNext || freshNext.status !== "pending") {
+              console.log(`${LOG} Scene ${nextScene.sceneIndex} already being processed, skipping`);
+              continue;
             }
-          } else {
-            nextSubmitResult = await submitT2V(novitaApiKey, {
-              prompt: nextScene.visualPrompt,
-              duration: nextScene.duration as 5 | 10 | 15,
-              size,
-              shot_type: nextScene.shotType,
-            });
+
+            try {
+              console.log(`${LOG} Submitting T2V for scene ${nextScene.sceneIndex} (model=${videoModel})`);
+              const nextSubmitResult = await submitT2V(novitaApiKey, {
+                prompt: nextScene.visualPrompt,
+                duration: nextScene.duration as 5 | 10 | 15,
+                size,
+                shot_type: nextScene.shotType,
+              }, videoModel);
+
+              await context.entities.StoryScene.updateMany({
+                where: { id: nextScene.id, status: "pending" },
+                data: {
+                  status: "generating",
+                  taskId: nextSubmitResult.task_id,
+                },
+              });
+
+              console.log(
+                `${LOG} Next scene ${nextScene.id} (index ${nextScene.sceneIndex}) submitted as task ${nextSubmitResult.task_id}`
+              );
+            } catch (submitErr: any) {
+              console.error(`${LOG} Failed to submit scene ${nextScene.sceneIndex}:`, submitErr.message);
+            }
           }
-
-          await context.entities.StoryScene.update({
-            where: { id: nextScene.id },
-            data: {
-              status: "generating",
-              taskId: nextSubmitResult.task_id,
-            },
-          });
-
-          console.log(
-            `${LOG} Next scene ${nextScene.id} (index ${nextScene.sceneIndex}) submitted as task ${nextSubmitResult.task_id}`
-          );
         }
       } else if (result.status === "failed") {
         // Scene failed
@@ -964,16 +1078,25 @@ export const checkStoryStatus = async (
   );
 
   if (allCompleted) {
-    await context.entities.StoryProject.update({
-      where: { id: args.projectId },
+    // Atomic guard: only transition if still "generating" (prevents double narration with cron job)
+    const transitioned = await context.entities.StoryProject.updateMany({
+      where: { id: args.projectId, status: "generating" },
       data: { status: "narrating" },
     });
+    if (transitioned.count === 0) {
+      console.log(`${LOG} Project ${args.projectId} already transitioned — skipping narration trigger`);
+      return context.entities.StoryProject.findUnique({
+        where: { id: args.projectId },
+        include: { scenes: { orderBy: { sceneIndex: "asc" } } },
+      });
+    }
     updatedProject.status = "narrating";
     console.log(
       `${LOG} All scenes completed for project ${args.projectId} — status → narrating`
     );
 
     // Auto-trigger narration generation (fire-and-forget)
+    // After narration completes, auto-trigger stitching
     (async () => {
       try {
         const novitaApiKey = await getSettingValue(
@@ -985,14 +1108,34 @@ export const checkStoryStatus = async (
           console.error(`${LOG} Auto-narration: invalid voiceId "${voiceId}"`);
           return;
         }
-        const scenesForNarration = updatedProject.scenes
-          .filter((s: any) => !s.narrationUrl)
-          .map((s: any) => ({ id: s.id, narrationText: s.narrationText }));
+        // Re-fetch scenes with updated durations from probing
+        const freshScenesForNar = await context.entities.StoryScene.findMany({
+          where: { projectId: args.projectId },
+          orderBy: { sceneIndex: "asc" },
+        });
+        const scenesForNarration = freshScenesForNar
+          .filter((s: any) => !s.narrationUrl && s.narrationText?.trim())
+          .map((s: any) => ({
+            id: s.id,
+            narrationText: trimNarrationToFit(s.narrationText, s.duration),
+          }));
         if (scenesForNarration.length === 0) {
-          await context.entities.StoryProject.update({
-            where: { id: args.projectId },
+          // All already narrated — skip to stitching
+          const stitchTransitioned = await context.entities.StoryProject.updateMany({
+            where: { id: args.projectId, status: "narrating" },
             data: { status: "narrated", errorMessage: null },
           });
+          if (stitchTransitioned.count > 0) {
+            // Auto-trigger stitching
+            const stitchGuard = await context.entities.StoryProject.updateMany({
+              where: { id: args.projectId, status: "narrated" },
+              data: { status: "stitching", errorMessage: null },
+            });
+            if (stitchGuard.count > 0) {
+              console.log(`${LOG} Auto-stitching: all scenes already narrated, starting stitch`);
+              await runStitchingPipeline(args.projectId, updatedProject, context);
+            }
+          }
           return;
         }
         console.log(`${LOG} Auto-narration: generating ${scenesForNarration.length} scene(s)...`);
@@ -1004,13 +1147,31 @@ export const checkStoryStatus = async (
           });
         }
         const allNarrated = results.size === scenesForNarration.length;
-        await context.entities.StoryProject.update({
-          where: { id: args.projectId },
-          data: {
-            status: allNarrated ? "narrated" : "generated",
-            errorMessage: allNarrated ? null : `Narration partially failed. Click "Generate Narration" to retry.`,
-          },
-        });
+        if (allNarrated) {
+          // Auto-trigger stitching after successful narration
+          const stitchGuard = await context.entities.StoryProject.updateMany({
+            where: { id: args.projectId, status: "narrating" },
+            data: { status: "stitching", errorMessage: null },
+          });
+          if (stitchGuard.count > 0) {
+            console.log(`${LOG} Auto-stitching: narration complete, starting stitch for project ${args.projectId}`);
+            await runStitchingPipeline(args.projectId, updatedProject, context);
+          } else {
+            // Fallback: set to narrated so user can manually trigger
+            await context.entities.StoryProject.update({
+              where: { id: args.projectId },
+              data: { status: "narrated", errorMessage: null },
+            });
+          }
+        } else {
+          await context.entities.StoryProject.update({
+            where: { id: args.projectId },
+            data: {
+              status: "generated",
+              errorMessage: `Narration partially failed. Click "Generate Narration" to retry.`,
+            },
+          });
+        }
         console.log(`${LOG} Auto-narration complete: ${results.size}/${scenesForNarration.length} scenes`);
       } catch (err: any) {
         console.error(`${LOG} Auto-narration failed:`, err.message);
@@ -1029,7 +1190,7 @@ export const checkStoryStatus = async (
     await context.entities.StoryProject.update({
       where: { id: args.projectId },
       data: {
-        progress: Math.round(totalProgress / updatedProject.scenes.length),
+        progress: updatedProject.scenes.length > 0 ? Math.round(totalProgress / updatedProject.scenes.length) : 0,
       },
     });
   } else {
@@ -1041,7 +1202,7 @@ export const checkStoryStatus = async (
     await context.entities.StoryProject.update({
       where: { id: args.projectId },
       data: {
-        progress: Math.round(totalProgress / updatedProject.scenes.length),
+        progress: updatedProject.scenes.length > 0 ? Math.round(totalProgress / updatedProject.scenes.length) : 0,
       },
     });
   }

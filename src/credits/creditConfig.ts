@@ -19,8 +19,12 @@ export enum CreditActionType {
   VideoStandard = "video_standard",
   VideoPremium = "video_premium",
   StoryPlan = "story_plan",
-  StoryBasic = "story_basic",
-  StoryStandard = "story_standard",
+  StoryLow = "story_low",
+  StoryLowLong = "story_low_long",
+  StoryMedium = "story_medium",
+  StoryMediumLong = "story_medium_long",
+  StoryHigh = "story_high",
+  StoryHighLong = "story_high_long",
   StorySceneRegen = "story_scene_regen",
 }
 
@@ -45,10 +49,50 @@ export const CREDIT_COSTS: Record<CreditActionType, number> = {
   [CreditActionType.VideoStandard]: 30,
   [CreditActionType.VideoPremium]: 60,
   [CreditActionType.StoryPlan]: 10,
-  [CreditActionType.StoryBasic]: 150,
-  [CreditActionType.StoryStandard]: 300,
+  [CreditActionType.StoryLow]: 150,
+  [CreditActionType.StoryLowLong]: 300,
+  [CreditActionType.StoryMedium]: 300,
+  [CreditActionType.StoryMediumLong]: 600,
+  [CreditActionType.StoryHigh]: 450,
+  [CreditActionType.StoryHighLong]: 900,
   [CreditActionType.StorySceneRegen]: 30,
 };
+
+// ---------------------------------------------------------------------------
+// Video quality tiers for Long Story Video
+// ---------------------------------------------------------------------------
+
+export type StoryQuality = "low" | "medium" | "high";
+
+export interface QualityTier {
+  id: StoryQuality;
+  label: string;
+  model: string;
+  resolution: "720p" | "1080p";
+  description: string;
+}
+
+export const QUALITY_TIERS: QualityTier[] = [
+  { id: "low", label: "Standard", model: "wan2.1", resolution: "720p", description: "720p HD · Fast rendering" },
+  { id: "medium", label: "Pro", model: "wan2.6", resolution: "720p", description: "720p HD · Premium AI model" },
+  { id: "high", label: "Ultra", model: "wan2.6", resolution: "1080p", description: "1080p Full HD · Best quality" },
+];
+
+export function getQualityTier(quality: StoryQuality): QualityTier {
+  return QUALITY_TIERS.find((t) => t.id === quality) || QUALITY_TIERS[0];
+}
+
+export function getStoryCreditAction(quality: StoryQuality, sceneCount: number): CreditActionType {
+  const isLong = sceneCount > 8;
+  switch (quality) {
+    case "high":
+      return isLong ? CreditActionType.StoryHighLong : CreditActionType.StoryHigh;
+    case "medium":
+      return isLong ? CreditActionType.StoryMediumLong : CreditActionType.StoryMedium;
+    default:
+      return isLong ? CreditActionType.StoryLowLong : CreditActionType.StoryLow;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Plan credit allotments (monthly reset)
@@ -105,7 +149,11 @@ export const ACTION_LABELS: Record<CreditActionType, string> = {
   [CreditActionType.VideoStandard]: "Video generation (standard)",
   [CreditActionType.VideoPremium]: "Video generation (premium)",
   [CreditActionType.StoryPlan]: "Story video planning",
-  [CreditActionType.StoryBasic]: "Story video (~1 min)",
-  [CreditActionType.StoryStandard]: "Story video (~2 min)",
+  [CreditActionType.StoryLow]: "Story video (Standard ≤1min)",
+  [CreditActionType.StoryLowLong]: "Story video (Standard >1min)",
+  [CreditActionType.StoryMedium]: "Story video (Pro ≤1min)",
+  [CreditActionType.StoryMediumLong]: "Story video (Pro >1min)",
+  [CreditActionType.StoryHigh]: "Story video (Ultra ≤1min)",
+  [CreditActionType.StoryHighLong]: "Story video (Ultra >1min)",
   [CreditActionType.StorySceneRegen]: "Story scene regeneration",
 };

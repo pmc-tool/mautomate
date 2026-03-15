@@ -9,22 +9,21 @@ import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import { deductCredits, refundCredits } from "../../credits/creditService";
 import { CreditActionType } from "../../credits/creditConfig";
+import { getSecureSetting } from "../../server/settingEncryption";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 async function getOpenAIClient(settingEntity: any): Promise<OpenAI> {
-  const setting = await settingEntity.findUnique({
-    where: { key: "platform.openai_api_key" },
-  });
-  if (!setting?.value) {
+  const apiKey = await getSecureSetting(settingEntity, "platform.openai_api_key");
+  if (!apiKey) {
     throw new HttpError(
       400,
       "OpenAI API key not configured. Go to Admin Settings to add your API key."
     );
   }
-  return new OpenAI({ apiKey: setting.value });
+  return new OpenAI({ apiKey });
 }
 
 // ---------------------------------------------------------------------------

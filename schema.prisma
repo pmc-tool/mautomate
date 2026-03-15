@@ -770,6 +770,7 @@ model StoryProject {
   prompt            String
   targetDuration    Int           @default(60)
   resolution        String        @default("720p")
+  quality           String        @default("low")
   voiceId           String?
   musicTrackId      String?
   musicMood         String?
@@ -819,6 +820,46 @@ model InboxCannedResponse {
   title           String
   content         String
   category        String?
+}
+
+// ---------------------------------------------------------------------------
+// Announcements & Promotions
+// ---------------------------------------------------------------------------
+
+model Announcement {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  title       String                          // Main display text
+  linkText    String?                         // CTA text (e.g. "Get 50% Off")
+  linkUrl     String?                         // CTA destination URL
+  type        String    @default("announcement") // announcement | promotion
+  bgFrom      String?                         // Gradient start color (hex)
+  bgTo        String?                         // Gradient end color (hex)
+  isActive    Boolean   @default(true)
+  startsAt    DateTime?                       // Scheduled start (null = immediately)
+  endsAt      DateTime?                       // Scheduled end (null = forever)
+  priority    Int       @default(0)           // Higher = shown first
+  dismissible Boolean   @default(true)        // Can user dismiss it?
+  animation   String   @default("none")      // none | slideDown | shimmer | pulse | gradientMove | marquee
+}
+
+// ---------------------------------------------------------------------------
+// Audit / Activity Log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  userId    String?
+  action    String      // "user.signup", "extension.purchase", "setting.update", "post.publish"
+  resource  String?     // "extension:social-media-agent", "setting:platform.openai_api_key"
+  detail    String?     // JSON metadata
+  ip        String?
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([action])
 }
 
 // ---------------------------------------------------------------------------
