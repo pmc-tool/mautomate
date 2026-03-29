@@ -49,12 +49,12 @@ export const faqs = [
 
 export const footerNavigation = {
   links: [
-    { name: "About", href: "https://mautomate.ai/about" },
+    { name: "About", href: "/about" },
     { name: "Features", href: "/#features" },
     { name: "Pricing", href: "/pricing" },
     { name: "Articles", href: "/articles" },
-    { name: "Documentation", href: "https://docs.mautomate.ai" },
-    { name: "Blog", href: "https://mautomate.ai/blog" },
+    { name: "Documentation", href: "/docs" },
+    { name: "Blog", href: "/blog" },
   ],
   integrations: [
     { name: "X", href: "#" },
