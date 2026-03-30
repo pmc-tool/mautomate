@@ -112,16 +112,21 @@ export const researchKeywords: ResearchKeywords<any, any> = async (
   // Deduct credits for keyword research
   await deductCredits(prisma, context.user.id, CreditActionType.KeywordResearch, { agentId: agent.id });
 
-  // Get SpyFu API key from settings
-  const apiKey = await getSpyfuApiKey(context.entities.Setting);
-
-  // Fetch keywords from SpyFu
-  let results;
+  // Fetch keywords
+  let results: Array<{
+    keyword: string;
+    searchVolume: number;
+    keywordDifficulty: number;
+    cpc: number;
+    intent?: string;
+  }>;
 
   if (args.source === "domain" && args.domain) {
+    // Domain-based research via SpyFu
+    const apiKey = await getSpyfuApiKey(context.entities.Setting);
     results = await getDomainKeywords(apiKey, args.domain);
   } else {
-    // Use provided keyword, or fall back to the agent's first seed keyword
+    // Related keyword research via OpenAI (SpyFu lacks this endpoint)
     const seedKeywords = (agent.seedKeywords as string[]) || [];
     const seedKeyword = args.keyword || seedKeywords[0];
 
@@ -132,7 +137,54 @@ export const researchKeywords: ResearchKeywords<any, any> = async (
       );
     }
 
-    results = await getRelatedKeywords(apiKey, seedKeyword);
+    const openai = await getOpenAIClient(context.entities.Setting);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert SEO keyword researcher. Given a seed keyword, generate a list of related keywords that would be valuable for SEO content planning. For each keyword, provide realistic estimates for search volume, keyword difficulty (0-100), and CPC in USD.
+
+Return a JSON object with this exact structure:
+{
+  "keywords": [
+    {
+      "keyword": "the keyword phrase",
+      "searchVolume": 1000,
+      "keywordDifficulty": 45,
+      "cpc": 2.50,
+      "intent": "informational"
+    }
+  ]
+}
+
+Intent must be one of: "informational", "commercial", "transactional", "navigational".
+Generate 20-30 diverse keywords including long-tail variations, questions, and commercial intent terms.`,
+        },
+        {
+          role: "user",
+          content: `Generate related SEO keywords for: "${seedKeyword}"`,
+        },
+      ],
+      max_tokens: 2048,
+      response_format: { type: "json_object" },
+    });
+
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) {
+      await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "Empty AI response");
+      throw new HttpError(500, "AI returned an empty response.");
+    }
+
+    let parsed: { keywords: typeof results };
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new HttpError(500, "Failed to parse AI keyword response.");
+    }
+
+    results = parsed.keywords || [];
   }
 
   if (results.length === 0) {

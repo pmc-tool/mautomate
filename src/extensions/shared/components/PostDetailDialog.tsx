@@ -729,7 +729,7 @@ export function PostDetailDialog({
                     </Button>
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    Uses DALL-E 3 to generate an image. Generation may take a few seconds.
+                    AI-generated image. Generation may take up to a minute.
                   </p>
                 </div>
               )}

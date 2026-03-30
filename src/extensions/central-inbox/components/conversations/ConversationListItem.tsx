@@ -110,7 +110,7 @@ export function ConversationListItem({ conversation, isSelected, onClick }: Conv
 function formatTimeAgo(dateStr: string | Date): string {
   const date = new Date(dateStr);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
   const diffMin = Math.floor(diffMs / 60000);
 
   if (diffMin < 1) return "now";

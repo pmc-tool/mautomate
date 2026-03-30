@@ -72,7 +72,7 @@ export function ContactDetailPanel({ conversation, onRefresh }: ContactDetailPan
   function formatTimeAgo(dateStr: string | Date): string {
     const date = new Date(dateStr);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = Math.max(0, now.getTime() - date.getTime());
     const diffDay = Math.floor(diffMs / 86400000);
     if (diffDay === 0) return "Today";
     if (diffDay === 1) return "Yesterday";

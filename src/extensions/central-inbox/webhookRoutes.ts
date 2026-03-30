@@ -19,6 +19,7 @@ import { messengerAdapter } from "./channels/messengerAdapter";
 import { instagramAdapter } from "./channels/instagramAdapter";
 import type { ChannelAdapter, NormalizedMessage } from "./channels/types";
 import { emitNewMessage, emitNewConversation, emitConversationUpdated } from "./webSocket";
+import { decrypt } from "../../social-connect/encryption";
 
 // ---------------------------------------------------------------------------
 // Middleware — skip JSON parsing (raw body needed for signature verification)
@@ -87,7 +88,31 @@ async function processIncomingMessage(
     return;
   }
 
-  // 2. Find or create contact
+  // 2. Resolve sender name — for Messenger/Instagram, fetch from Graph API if missing
+  let senderName = normalized.senderName;
+  if (!senderName && (channel === "messenger" || channel === "instagram") && chatbotChannel?.fbAccessToken) {
+    try {
+      const safeDecrypt = (val: string): string => {
+        try { return decrypt(val); } catch { return val; }
+      };
+      const pageToken = safeDecrypt(chatbotChannel.fbAccessToken);
+      const profileRes = await fetch(
+        `https://graph.facebook.com/${normalized.channelUserId}?fields=first_name,last_name,name,profile_pic&access_token=${pageToken}`
+      );
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        senderName = profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || undefined;
+        // Also update avatar if available
+        if (profile.profile_pic) {
+          normalized.metadata = { ...normalized.metadata, avatarUrl: profile.profile_pic };
+        }
+      }
+    } catch (err) {
+      console.error("[Inbox] Failed to fetch sender profile:", err);
+    }
+  }
+
+  // Find or create contact
   const contact = await entities.InboxContact.upsert({
     where: {
       userId_channel_channelUserId: {
@@ -100,11 +125,13 @@ async function processIncomingMessage(
       userId,
       channel,
       channelUserId: normalized.channelUserId,
-      name: normalized.senderName,
+      name: senderName,
+      avatarUrl: normalized.metadata?.avatarUrl || undefined,
       lastSeenAt: new Date(),
     },
     update: {
-      name: normalized.senderName || undefined,
+      name: senderName || undefined,
+      avatarUrl: normalized.metadata?.avatarUrl || undefined,
       lastSeenAt: new Date(),
     },
   });
@@ -143,7 +170,7 @@ async function processIncomingMessage(
     data: {
       conversationId: conversation.id,
       senderType: "contact",
-      senderName: normalized.senderName,
+      senderName: senderName || normalized.senderName,
       content: normalized.content,
       contentType: normalized.contentType,
       attachments: (normalized.attachments || []) as any,
@@ -345,27 +372,47 @@ export const widgetMessages: InboxWidgetMessages = async (req, res, context) => 
 // ---------------------------------------------------------------------------
 
 export const whatsappVerify: InboxVerifyWhatsapp = async (req, res, context) => {
-  await handleMetaVerification(req, res, context, "inbox.whatsapp.verify_token");
+  await handleMetaVerification(req, res, context, "whatsapp", "waVerifyToken");
 };
 
 export const messengerVerify: InboxVerifyMessenger = async (req, res, context) => {
-  await handleMetaVerification(req, res, context, "inbox.messenger.verify_token");
+  await handleMetaVerification(req, res, context, "messenger", "fbVerifyToken");
 };
 
 export const instagramVerify: InboxVerifyInstagram = async (req, res, context) => {
-  await handleMetaVerification(req, res, context, "inbox.instagram.verify_token");
+  await handleMetaVerification(req, res, context, "instagram", "fbVerifyToken");
 };
 
-async function handleMetaVerification(req: any, res: any, context: any, settingKey: string) {
+async function handleMetaVerification(
+  req: any,
+  res: any,
+  context: any,
+  channel: string,
+  tokenField: string,
+) {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe") {
+  if (mode === "subscribe" && token) {
+    // Look up verify token from any active chatbot channel config for this channel
+    const channels = await prisma.chatbotChannel.findMany({
+      where: { channel, isActive: true },
+    });
+
+    for (const ch of channels) {
+      const storedToken = (ch as any)[tokenField];
+      if (storedToken && storedToken === token) {
+        res.status(200).send(challenge);
+        return;
+      }
+    }
+
+    // Fallback: check Setting table (legacy)
+    const settingKey = `inbox.${channel}.verify_token`;
     const setting = await context.entities.Setting.findUnique({
       where: { key: settingKey },
     });
-
     if (setting?.value === token) {
       res.status(200).send(challenge);
       return;

@@ -15,12 +15,19 @@ import { Alert, AlertDescription, AlertTitle } from "../client/components/ui/ale
 import { Card } from "../client/components/ui/card";
 import { Button } from "../client/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../client/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../client/components/ui/dropdown-menu";
-import { Loader2, AlertCircle, Plus, ChevronDown } from "lucide-react";
+import { Loader2, AlertCircle, Plus, ChevronDown, Globe, Key, Settings2 } from "lucide-react";
 import { PLATFORMS, PLATFORM_KEYS, type PlatformKey } from "./platforms";
 import PlatformCard from "./components/PlatformCard";
 import AccountsTable from "./components/AccountsTable";
@@ -51,6 +58,8 @@ export default function SocialConnectPage({ user }: { user: AuthUser }) {
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
     null
   );
+  // Platform pending connection method choice (shown in chooser dialog)
+  const [chooserPlatform, setChooserPlatform] = useState<PlatformKey | null>(null);
 
   // ----------------------------------------------------------------
   // Queries
@@ -153,13 +162,13 @@ export default function SocialConnectPage({ user }: { user: AuthUser }) {
 
   /**
    * Handles a platform selection from the banner dropdown.
-   * Uses system app if available, otherwise falls back to custom credential
-   * flow or opens the credential dialog.
+   * If system app is available, shows a chooser so user can pick
+   * between mAutomate API or their own keys.
    */
   const handleDropdownConnect = useCallback(
     (platform: PlatformKey) => {
       if (isSystemAppAvailable(platform)) {
-        handleConnect(platform, true);
+        setChooserPlatform(platform);
       } else if (hasCustomCredential(platform)) {
         handleConnect(platform, false);
       } else {
@@ -307,10 +316,94 @@ export default function SocialConnectPage({ user }: { user: AuthUser }) {
                 accounts={accounts as any}
                 onDisconnect={handleDisconnect}
                 onReconnect={handleReconnect}
+                onEditCredentials={handleConfigureCustom}
               />
             )}
           </>
         )}
+
+        {/* Connection method chooser dialog */}
+        <Dialog
+          open={chooserPlatform !== null}
+          onOpenChange={(open) => { if (!open) setChooserPlatform(null); }}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>
+                Connect {chooserPlatform ? PLATFORMS[chooserPlatform].name : ""}
+              </DialogTitle>
+              <DialogDescription>
+                Choose how you want to connect your account.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <button
+                className="flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+                onClick={() => {
+                  if (chooserPlatform) handleConnect(chooserPlatform, true);
+                  setChooserPlatform(null);
+                }}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Use mAutomate API</p>
+                  <p className="text-sm text-muted-foreground">
+                    Quick connect — no setup needed
+                  </p>
+                </div>
+              </button>
+
+              <button
+                className="flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+                onClick={() => {
+                  const p = chooserPlatform;
+                  setChooserPlatform(null);
+                  if (!p) return;
+                  if (hasCustomCredential(p)) {
+                    handleConnect(p, false);
+                  } else {
+                    handleConfigureCustom(p);
+                  }
+                }}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
+                  <Key className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Use My Own API Keys</p>
+                  <p className="text-sm text-muted-foreground">
+                    {chooserPlatform && hasCustomCredential(chooserPlatform)
+                      ? "Connect with your saved credentials"
+                      : "Set up your own app credentials"}
+                  </p>
+                </div>
+              </button>
+
+              {chooserPlatform && hasCustomCredential(chooserPlatform) && (
+                <button
+                  className="flex w-full items-center gap-4 rounded-lg border border-dashed p-4 text-left transition-colors hover:bg-muted"
+                  onClick={() => {
+                    const p = chooserPlatform;
+                    setChooserPlatform(null);
+                    if (p) handleConfigureCustom(p);
+                  }}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Settings2 className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Edit API Keys</p>
+                    <p className="text-sm text-muted-foreground">
+                      Update your saved credentials
+                    </p>
+                  </div>
+                </button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Credential dialog -- single shared instance */}
         <CredentialDialog

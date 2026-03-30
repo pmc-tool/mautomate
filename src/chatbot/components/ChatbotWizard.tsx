@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "wasp/client/operations";
 import { getChatbot, updateChatbot } from "wasp/client/operations";
 import { Button } from "../../client/components/ui/button";
@@ -32,10 +32,12 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
 
   // Local draft state for live preview
   const [draft, setDraft] = useState<Record<string, any>>({});
+  const draftInitialized = useRef(false);
 
-  // Sync draft when chatbot loads
+  // Sync draft when chatbot loads — only on first load, not on every refetch
   useEffect(() => {
-    if (chatbot) {
+    if (chatbot && !draftInitialized.current) {
+      draftInitialized.current = true;
       setDraft({
         title: chatbot.title,
         bubbleMessage: chatbot.bubbleMessage || "",
@@ -84,8 +86,8 @@ export default function ChatbotWizard({ chatbotId, initialStep, onClose }: Chatb
     if (step > 1) setStep(step - 1);
   };
 
-  const handleStepClick = (targetStep: number) => {
-    handleSaveStep();
+  const handleStepClick = async (targetStep: number) => {
+    await handleSaveStep();
     setStep(targetStep);
   };
 

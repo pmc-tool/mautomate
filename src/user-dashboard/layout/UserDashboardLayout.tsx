@@ -1,5 +1,6 @@
-import { FC, ReactNode, useState } from "react";
+import { FC, ReactNode, useState, useEffect, useRef } from "react";
 import { type AuthUser } from "wasp/auth";
+import { claimReferral } from "wasp/client/operations";
 import UserHeader from "./UserHeader";
 import UserSidebar from "./UserSidebar";
 
@@ -10,6 +11,21 @@ interface Props {
 
 const UserDashboardLayout: FC<Props> = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Claim affiliate referral on first authenticated page load
+  const claimed = useRef(false);
+  useEffect(() => {
+    if (claimed.current) return;
+    const ref = localStorage.getItem("mAutomate_ref");
+    if (ref) {
+      claimed.current = true;
+      claimReferral({ code: ref })
+        .then(() => localStorage.removeItem("mAutomate_ref"))
+        .catch(() => {
+          claimed.current = false; // Allow retry on next render
+        });
+    }
+  }, []);
 
   return (
     <div className="bg-background text-foreground">

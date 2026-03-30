@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from "../../client/components/ui/dialog";
 import { Button } from "../../client/components/ui/button";
-import { Input } from "../../client/components/ui/input";
 import { Label } from "../../client/components/ui/label";
 import { Alert, AlertDescription } from "../../client/components/ui/alert";
 import { Separator } from "../../client/components/ui/separator";
@@ -30,21 +29,55 @@ interface CredentialDialogProps {
   existingCredential?: { clientId: string; redirectUri: string } | null;
 }
 
+/**
+ * Uncontrolled input that ignores browser autofill.
+ * Uses a ref to read the real value on save, so the browser
+ * can never silently overwrite React state.
+ */
+function AntiAutofillInput({
+  id,
+  defaultValue,
+  placeholder,
+  inputRef,
+}: {
+  id: string;
+  defaultValue: string;
+  placeholder: string;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <input
+      ref={inputRef}
+      id={id}
+      name={`_no_autofill_${id}_${Date.now()}`}
+      type="text"
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      autoComplete="off"
+      data-1p-ignore
+      data-lpignore="true"
+      data-form-type="other"
+      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    />
+  );
+}
+
 export default function CredentialDialog({
   open,
   onOpenChange,
   platform,
   existingCredential,
 }: CredentialDialogProps) {
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
+  const clientIdRef = useRef<HTMLInputElement | null>(null);
+  const clientSecretRef = useRef<HTMLInputElement | null>(null);
   const [copiedRedirectUri, setCopiedRedirectUri] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Key to force re-mount of inputs when dialog opens
+  const [formKey, setFormKey] = useState(0);
 
   const config = platform ? PLATFORMS[platform] : null;
 
-  // Callback hits the server directly (port 3001 in dev), not the client
   const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:3001';
   const redirectUri = platform
     ? `${apiUrl}/api/social-connect/callback/${platform}`
@@ -53,12 +86,12 @@ export default function CredentialDialog({
   // Reset form when dialog opens or platform changes
   useEffect(() => {
     if (open && platform) {
-      setClientId(existingCredential?.clientId ?? "");
-      setClientSecret("");
       setError(null);
       setCopiedRedirectUri(false);
+      // Force re-mount inputs to clear any browser autofill
+      setFormKey((k) => k + 1);
     }
-  }, [open, platform, existingCredential]);
+  }, [open, platform]);
 
   const handleCopyRedirectUri = useCallback(async () => {
     try {
@@ -66,7 +99,6 @@ export default function CredentialDialog({
       setCopiedRedirectUri(true);
       setTimeout(() => setCopiedRedirectUri(false), 2000);
     } catch {
-      // Fallback for insecure contexts
       const textarea = document.createElement("textarea");
       textarea.value = redirectUri;
       document.body.appendChild(textarea);
@@ -81,14 +113,15 @@ export default function CredentialDialog({
   async function handleSave() {
     if (!platform) return;
 
-    if (!clientId.trim()) {
+    const clientId = clientIdRef.current?.value?.trim() ?? "";
+    const clientSecret = clientSecretRef.current?.value?.trim() ?? "";
+
+    if (!clientId) {
       setError("Client ID is required.");
       return;
     }
 
-    // When creating new credentials, secret is required.
-    // When editing, secret can be blank (unchanged).
-    if (!existingCredential && !clientSecret.trim()) {
+    if (!existingCredential && !clientSecret) {
       setError("Client Secret is required.");
       return;
     }
@@ -99,10 +132,8 @@ export default function CredentialDialog({
     try {
       await saveSocialAppCredential({
         platform,
-        clientId: clientId.trim(),
-        ...(clientSecret.trim()
-          ? { clientSecret: clientSecret.trim() }
-          : {}),
+        clientId,
+        ...(clientSecret ? { clientSecret } : {}),
         redirectUri,
       });
 
@@ -134,86 +165,85 @@ export default function CredentialDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="credential-client-id">Client ID</Label>
-            <Input
-              id="credential-client-id"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              placeholder="Enter your app's Client ID"
-              autoComplete="off"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="credential-client-secret">Client Secret</Label>
-            <Input
-              id="credential-client-secret"
-              type="password"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              placeholder={
-                existingCredential
-                  ? "Leave blank to keep existing secret"
-                  : "Enter your app's Client Secret"
-              }
-              autoComplete="off"
-            />
-            {existingCredential && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3" />
-                Existing secret is stored securely. Leave blank to keep it.
-              </p>
+        <form onSubmit={(e) => e.preventDefault()} autoComplete="off" data-form-type="other" key={formKey}>
+          <div className="space-y-4 py-2">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="credential-redirect-uri">Redirect URI</Label>
-            <div className="flex gap-2">
-              <Input
-                id="credential-redirect-uri"
-                value={redirectUri}
-                readOnly
-                className="bg-muted text-muted-foreground"
+            <div className="space-y-2">
+              <Label htmlFor="oauth-app-id">Client ID</Label>
+              <AntiAutofillInput
+                id="oauth-app-id"
+                defaultValue={existingCredential?.clientId ?? ""}
+                placeholder="Enter your app's Client ID"
+                inputRef={clientIdRef}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopyRedirectUri}
-                className="shrink-0"
-              >
-                {copiedRedirectUri ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Add this URL as an authorized redirect URI in your app settings.
-            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="oauth-app-secret">Client Secret</Label>
+              <AntiAutofillInput
+                id="oauth-app-secret"
+                defaultValue=""
+                placeholder={
+                  existingCredential
+                    ? "Leave blank to keep existing secret"
+                    : "Enter your app's Client Secret"
+                }
+                inputRef={clientSecretRef}
+              />
+              {existingCredential && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  Existing secret is stored securely. Leave blank to keep it.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="oauth-redirect-uri">Redirect URI</Label>
+              <div className="flex gap-2">
+                <input
+                  id="oauth-redirect-uri"
+                  value={redirectUri}
+                  readOnly
+                  className="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground shadow-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyRedirectUri}
+                  className="shrink-0"
+                >
+                  {copiedRedirectUri ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Add this URL as an authorized redirect URI in your app settings.
+              </p>
+            </div>
+
+            <Separator />
+
+            <a
+              href={getInstructionsUrl(platform)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {config.instructions}
+            </a>
           </div>
-
-          <Separator />
-
-          <a
-            href={getInstructionsUrl(platform)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            {config.instructions}
-          </a>
-        </div>
+        </form>
 
         <DialogFooter>
           <Button

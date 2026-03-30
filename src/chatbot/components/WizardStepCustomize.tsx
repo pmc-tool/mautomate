@@ -1,8 +1,10 @@
+import { useState, useRef } from "react";
 import { Input } from "../../client/components/ui/input";
 import { Label } from "../../client/components/ui/label";
 import { Switch } from "../../client/components/ui/switch";
 import { cn } from "../../client/utils";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, Upload, Loader2 } from "lucide-react";
+import { uploadFile } from "wasp/client/operations";
 import chatbotDefaultImg from "../../client/static/chatbot/chatbot-default.png";
 
 interface WizardStepCustomizeProps {
@@ -30,13 +32,52 @@ const TOGGLES = [
 export default function WizardStepCustomize({ draft, onUpdate }: WizardStepCustomizeProps) {
   const currentColor = draft.color || "#017BE5";
   const triggerSize = draft.triggerSize || 60;
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const isCustomImage = draft.avatar && !draft.avatar.startsWith("color:") && draft.avatar !== "";
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be under 5 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const uploaded = await uploadFile({
+        data: base64,
+        fileName: file.name,
+        fileType: file.type,
+      });
+
+      const keyWithoutExt = uploaded.s3Key.replace(/\.[^.]+$/, '');
+      onUpdate({ avatar: `/api/files/${keyWithoutExt}` });
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload image.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   return (
     <div className="space-y-7">
       {/* Avatar Selection */}
       <div className="space-y-3">
         <Label className="text-foreground font-medium">Avatar</Label>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="flex flex-wrap gap-3">
           {/* Default avatar */}
           <button
             onClick={() => onUpdate({ avatar: "" })}
@@ -76,6 +117,43 @@ export default function WizardStepCustomize({ draft, onUpdate }: WizardStepCusto
               )}
             </button>
           ))}
+
+          {/* Custom image avatar (shows when one is uploaded) */}
+          {isCustomImage && (
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              className="group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary ring-2 ring-primary/20 transition-all hover:scale-110"
+            >
+              <img src={draft.avatar} alt="Custom" className="h-10 w-10 rounded-full object-cover" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                <Check className="h-3 w-3" />
+              </span>
+            </button>
+          )}
+
+          {/* Upload custom image button */}
+          <button
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className={cn(
+              "flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed transition-all hover:scale-110 hover:border-primary/50",
+              "text-muted-foreground hover:text-primary"
+            )}
+            title="Upload custom avatar"
+          >
+            {uploadingAvatar ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Upload className="h-5 w-5" />
+            )}
+          </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
         </div>
       </div>
 

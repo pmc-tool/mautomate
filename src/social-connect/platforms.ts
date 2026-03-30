@@ -57,7 +57,7 @@ export const PLATFORMS: Record<PlatformKey, PlatformConfig> = {
     authUrl: 'https://www.tiktok.com/v2/auth/authorize/',
     tokenUrl: 'https://open.tiktokapis.com/v2/oauth/token/',
     profileUrl: 'https://open.tiktokapis.com/v2/user/info/',
-    scopes: ['user.info.basic', 'video.publish'],
+    scopes: ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list'],
     pkce: true,
     color: '#000000',
     instructions: 'Create an app at developers.tiktok.com',

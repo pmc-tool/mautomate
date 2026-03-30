@@ -19,6 +19,33 @@ function redirectWithSuccess(res: Parameters<SocialOAuthCallback>[1], platform: 
 }
 
 // ---------------------------------------------------------------------------
+// Retry helper for transient network errors (ETIMEDOUT, ECONNRESET, etc.)
+// ---------------------------------------------------------------------------
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 2,
+  delayMs = 1500,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err: any) {
+      const isTransient =
+        err?.cause?.code === 'ETIMEDOUT' ||
+        err?.cause?.code === 'ECONNRESET' ||
+        err?.cause?.code === 'ECONNREFUSED' ||
+        err?.message?.includes('fetch failed');
+      if (!isTransient || attempt === retries) throw err;
+      console.warn(`[SocialConnect] Retry ${attempt + 1}/${retries} after ${err?.cause?.code || 'network error'}`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error('fetchWithRetry: unreachable');
+}
+
+// ---------------------------------------------------------------------------
 // Token exchange helpers
 // ---------------------------------------------------------------------------
 
@@ -57,7 +84,7 @@ async function exchangeCodeForTokens(
       ...(codeVerifier ? { code_verifier: codeVerifier } : {}),
     });
 
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithRetry(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -85,7 +112,7 @@ async function exchangeCodeForTokens(
       ...(codeVerifier ? { code_verifier: codeVerifier } : {}),
     };
 
-    const response = await fetch(tokenUrl, {
+    const response = await fetchWithRetry(tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -108,7 +135,7 @@ async function exchangeCodeForTokens(
     redirect_uri: redirectUri,
   });
 
-  const response = await fetch(tokenUrl, {
+  const response = await fetchWithRetry(tokenUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -139,7 +166,7 @@ interface AccountInfo {
  */
 async function fetchFacebookPages(userAccessToken: string): Promise<AccountInfo[]> {
   const url = 'https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,picture{url}';
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${userAccessToken}` },
   });
 
@@ -171,7 +198,7 @@ async function fetchFacebookPages(userAccessToken: string): Promise<AccountInfo[
 async function fetchInstagramAccounts(userAccessToken: string): Promise<AccountInfo[]> {
   const url =
     'https://graph.facebook.com/v21.0/me/accounts?fields=id,name,instagram_business_account{id,username,name,profile_picture_url},access_token';
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${userAccessToken}` },
   });
 
@@ -211,7 +238,7 @@ async function fetchSingleProfile(platform: PlatformKey, accessToken: string): P
 
   // TikTok
   if (platform === 'tiktok') {
-    const tiktokResponse = await fetch(`${profileUrl}?fields=open_id,display_name,avatar_url`, {
+    const tiktokResponse = await fetchWithRetry(`${profileUrl}?fields=open_id,display_name,avatar_url`, {
       method: 'GET',
       headers,
     });
@@ -233,10 +260,11 @@ async function fetchSingleProfile(platform: PlatformKey, accessToken: string): P
     };
   }
 
-  const response = await fetch(profileUrl, { method: 'GET', headers });
+  const response = await fetchWithRetry(profileUrl, { method: 'GET', headers });
 
   if (!response.ok) {
     const text = await response.text();
+    console.error(`[SocialConnect] ${platform} profile fetch failed (${response.status}):`, text);
     throw new Error(`${PLATFORMS[platform].name} profile fetch failed (${response.status}): ${text}`);
   }
 
@@ -266,11 +294,16 @@ async function fetchSingleProfile(platform: PlatformKey, accessToken: string): P
     case 'youtube':
     case 'youtube_shorts': {
       const channel = data.items?.[0];
+      if (!channel?.id) {
+        throw new Error(
+          'No YouTube channel found for this account. Please select the Google account that has a YouTube channel, not your personal email.'
+        );
+      }
       return {
-        platformUserId: channel?.id ?? '',
+        platformUserId: channel.id,
         platformUsername: null,
-        displayName: channel?.snippet?.title ?? null,
-        profileImageUrl: channel?.snippet?.thumbnails?.default?.url ?? null,
+        displayName: channel.snippet?.title ?? null,
+        profileImageUrl: channel.snippet?.thumbnails?.default?.url ?? null,
         accessToken,
       };
     }
@@ -415,7 +448,13 @@ export const socialOAuthCallback: SocialOAuthCallback = async (req, res, context
         );
       }
     } else {
-      const profile = await fetchSingleProfile(platform, tokenData.access_token);
+      let profile: AccountInfo;
+      try {
+        profile = await fetchSingleProfile(platform, tokenData.access_token);
+      } catch (profileErr: any) {
+        await context.entities.OAuthState.delete({ where: { id: oauthState.id } });
+        return redirectWithError(res, profileErr.message || 'Failed to fetch your profile from the platform.');
+      }
       if (!profile.platformUserId) {
         await context.entities.OAuthState.delete({ where: { id: oauthState.id } });
         return redirectWithError(res, 'Could not determine your account ID from the platform.');

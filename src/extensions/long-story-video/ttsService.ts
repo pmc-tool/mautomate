@@ -81,7 +81,7 @@ async function submitMiniMaxTTS(
         emotion: "neutral",
       },
       audio_setting: {
-        sample_rate: 48000,
+        sample_rate: 44100,
         bitrate: 128000,
         format: "mp3",
         channel: 1,

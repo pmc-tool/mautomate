@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, RefreshCw, X, User } from "lucide-react";
+import { Search, RefreshCw, X, User, Settings2 } from "lucide-react";
 import { Button } from "../../client/components/ui/button";
 import {
   Avatar,
@@ -43,12 +43,14 @@ interface AccountsTableProps {
   accounts: Account[];
   onDisconnect: (accountId: string) => void;
   onReconnect: (platform: PlatformKey, useSystemApp: boolean) => void;
+  onEditCredentials?: (platform: PlatformKey) => void;
 }
 
 export default function AccountsTable({
   accounts,
   onDisconnect,
   onReconnect,
+  onEditCredentials,
 }: AccountsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -138,6 +140,11 @@ export default function AccountsTable({
                   isConfirming={confirmingId === account.id}
                   onDisconnect={() => handleDisconnect(account.id)}
                   onReconnect={() => handleReconnect(account)}
+                  onEditCredentials={
+                    !account.useSystemApp && onEditCredentials
+                      ? () => onEditCredentials(account.platform as PlatformKey)
+                      : undefined
+                  }
                   onBlurDisconnect={() => {
                     if (confirmingId === account.id) setConfirmingId(null);
                   }}
@@ -160,6 +167,7 @@ interface AccountRowProps {
   isConfirming: boolean;
   onDisconnect: () => void;
   onReconnect: () => void;
+  onEditCredentials?: () => void;
   onBlurDisconnect: () => void;
 }
 
@@ -168,6 +176,7 @@ function AccountRow({
   isConfirming,
   onDisconnect,
   onReconnect,
+  onEditCredentials,
   onBlurDisconnect,
 }: AccountRowProps) {
   const platformKey = account.platform as PlatformKey;
@@ -246,6 +255,17 @@ function AccountRow({
       {/* Actions */}
       <td className="px-5 py-4">
         <div className="flex items-center justify-end gap-1">
+          {onEditCredentials && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted"
+              onClick={onEditCredentials}
+              title="Edit API credentials"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

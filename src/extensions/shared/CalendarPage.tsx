@@ -236,14 +236,14 @@ export default function ContentCalendarPage({ user }: { user: AuthUser }) {
     if (!selectedPost) return;
     setLoading(true);
     try {
-      await reworkPost({
+      const updated = await reworkPost({
         postType: selectedPost.postType,
         postId: selectedPost.id,
         customPrompt: prompt,
       });
       await refetchPosts();
       setSelectedPost((prev) =>
-        prev ? { ...prev, status: "draft" } : null
+        prev ? { ...prev, ...updated, status: "draft" } : null
       );
       await fetchRevisions(selectedPost);
       toast({ title: "Post sent for rework" });

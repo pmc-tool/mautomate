@@ -310,6 +310,13 @@ query getFileSignedURLsBatch {
   fn: import { getFileSignedURLsBatch } from "@src/file-upload/operations",
   entities: [User, File]
 }
+
+api serveUploadedFile {
+  fn: import { serveFile } from "@src/file-upload/fileServeApi",
+  entities: [File],
+  httpRoute: (GET, "/api/files/:userId/:fileId"),
+  auth: false
+}
 //#endregion
 
 //#region Analytics
@@ -1259,21 +1266,21 @@ api inboxWidgetConfig {
 // WhatsApp/Messenger GET verification endpoints
 api inboxVerifyWhatsapp {
   fn: import { whatsappVerify } from "@src/extensions/central-inbox/webhookRoutes",
-  entities: [Setting],
+  entities: [Setting, ChatbotChannel],
   httpRoute: (GET, "/api/inbox/webhook/whatsapp"),
   auth: false
 }
 
 api inboxVerifyMessenger {
   fn: import { messengerVerify } from "@src/extensions/central-inbox/webhookRoutes",
-  entities: [Setting],
+  entities: [Setting, ChatbotChannel],
   httpRoute: (GET, "/api/inbox/webhook/messenger"),
   auth: false
 }
 
 api inboxVerifyInstagram {
   fn: import { instagramVerify } from "@src/extensions/central-inbox/webhookRoutes",
-  entities: [Setting],
+  entities: [Setting, ChatbotChannel],
   httpRoute: (GET, "/api/inbox/webhook/instagram"),
   auth: false
 }
