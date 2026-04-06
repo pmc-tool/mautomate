@@ -1,5 +1,7 @@
-import footerLogo from "../../client/static/logo.png";
 import { useBranding } from "../../branding/BrandingContext";
+import useColorMode from "../../client/hooks/useColorMode";
+import footerLogoLight from "../../client/static/logo-light.png";
+import footerLogoDark from "../../client/static/logo-dark.png";
 
 interface NavigationItem {
   name: string;
@@ -15,10 +17,11 @@ export default function Footer({
   };
 }) {
   const branding = useBranding();
+  const [colorMode] = useColorMode();
   const currentYear = new Date().getFullYear();
   const primaryColor = branding.primaryColor || "#bd711d";
   const darkerPrimary = darkenColor(primaryColor, 0.15);
-  const logoSrc = branding.logoUrl || footerLogo;
+  const defaultLogo = colorMode === "dark" ? footerLogoDark : footerLogoLight;
   const copyrightText = branding.copyrightText || `${currentYear} ${branding.domain || "mAutomate.ai"}. All rights reserved.`;
   const termsUrl = branding.termsUrl || "/terms";
   const privacyUrl = branding.privacyUrl || "/privacy";
@@ -59,7 +62,7 @@ export default function Footer({
                 <ul className="mt-[24px] space-y-[12px] sm:mt-[36px] sm:space-y-[14px]">
                   {footerNavigation.integrations.map((item) => (
                     <li key={item.name}>
-                      <a
+                      <a target="_blank"
                         href={item.href}
                         className="text-[14px] font-medium leading-[22.5px] text-[#0a0f14] transition-colors hover:text-[#bd711d] sm:text-[15px] dark:text-foreground dark:hover:text-primary"
                         style={{ fontFamily: "'Poppins', sans-serif" }}
@@ -101,7 +104,7 @@ export default function Footer({
         </div>
 
         {/* Watermark area: big logo with top fade */}
-        <div className="relative mt-[20px] h-[120px] sm:h-[160px] lg:h-[220px]">
+        <div className="relative mt-[20px] h-[120px] overflow-hidden sm:h-[160px] lg:h-[220px]">
           {/* Top fade-out gradient overlay — light mode */}
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[80px] sm:h-[105px] dark:hidden"
@@ -111,12 +114,17 @@ export default function Footer({
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-[80px] bg-gradient-to-b from-card to-transparent sm:h-[105px] dark:block"
           />
-          {/* Big logo as watermark — full width, centered */}
+          {/* Big logo as watermark — light mode */}
           <img
-            src={logoSrc}
+            src={footerLogoLight}
             alt={branding.appName}
-            onError={(e) => { (e.target as HTMLImageElement).src = footerLogo; }}
-            className="absolute bottom-0 left-1/2 z-0 h-auto w-[90%] max-w-[900px] -translate-x-1/2 object-contain opacity-30 sm:w-[85%] dark:opacity-10"
+            className="absolute  left-1/2 w-full max-w-[900px] -translate-x-1/2 object-contain dark:hidden"
+          />
+          {/* Big logo as watermark — dark mode */}
+          <img
+            src={footerLogoDark}
+            alt={branding.appName}
+            className="absolute  left-1/2 hidden w-full max-w-[900px] -translate-x-1/2 opacity-30  dark:block"
           />
         </div>
 

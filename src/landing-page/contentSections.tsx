@@ -49,19 +49,19 @@ export const faqs = [
 
 export const footerNavigation = {
   links: [
-    { name: "About", href: "https://mautomate.ai/about" },
+    { name: "About", href: "/about" },
     { name: "Features", href: "/#features" },
     { name: "Pricing", href: "/pricing" },
     { name: "Articles", href: "/articles" },
-    { name: "Documentation", href: "https://docs.mautomate.ai" },
-    { name: "Blog", href: "https://mautomate.ai/blog" },
+    { name: "Documentation", href: "/docs" },
+    { name: "Blog", href: "/blog" },
   ],
   integrations: [
-    { name: "X", href: "#" },
-    { name: "Instagram", href: "#" },
-    { name: "LinkedIn", href: "#" },
-    { name: "Facebook", href: "#" },
-    { name: "YouTube", href: "#" },
-    { name: "YouTube Shorts", href: "#" },
+    { name: "X", href: "https://x.com/mautomateai" },
+    { name: "Instagram", href: "https://www.instagram.com/mautomate.ai" },
+    { name: "LinkedIn", href: "https://www.linkedin.com/company/mautomate-ai/posts/?feedView=all" },
+    { name: "Facebook", href: "https://www.facebook.com/mautomateai" },
+    { name: "YouTube", href: "https://www.youtube.com/@Mautomateai" },
+    { name: "YouTube Shorts", href: "https://www.youtube.com/@Mautomateai/shorts" },
   ],
 };
