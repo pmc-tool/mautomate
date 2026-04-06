@@ -67,13 +67,18 @@ export default function AIReady() {
 
         {/* Numbered features */}
         <div className="flex flex-col gap-[24px]">
-          <div className="flex gap-[16px] sm:gap-[20px]">
-            <div className="shrink-0 rounded-full border border-[#f6e7d5] p-[8px] sm:p-[10px]">
-              <div className="relative flex h-[32px] w-[32px] items-center justify-center overflow-hidden sm:h-[36px] sm:w-[36px]">
-                <img src={numberOval} alt="" className="absolute inset-[5.56%] h-full w-full" />
-                <span className="relative text-[14px] font-semibold text-[#2e2e2e] sm:text-[16px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>1</span>
+          <div className="flex gap-4 sm:gap-5xl">
+
+
+
+            <div>
+              <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
+                <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">1</h1>
               </div>
             </div>
+
+
+
             <div className="flex flex-col gap-[8px] sm:gap-[10px]">
               <p className="text-[17px] font-semibold leading-[1.2] text-[#030303] sm:text-[20px] dark:text-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 AI That Optimizes Every Campaign
@@ -85,10 +90,9 @@ export default function AIReady() {
           </div>
 
           <div className="flex gap-[16px] sm:gap-[20px]">
-            <div className="shrink-0 rounded-full border border-[#f6e7d5] p-[8px] sm:p-[10px]">
-              <div className="relative flex h-[32px] w-[32px] items-center justify-center overflow-hidden sm:h-[36px] sm:w-[36px]">
-                <img src={numberOval} alt="" className="absolute inset-[5.56%] h-full w-full" />
-                <span className="relative text-[14px] font-semibold text-[#2e2e2e] sm:text-[16px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>2</span>
+           <div>
+              <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
+                <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">2</h1>
               </div>
             </div>
             <div className="flex flex-col gap-[8px] sm:gap-[10px]">
