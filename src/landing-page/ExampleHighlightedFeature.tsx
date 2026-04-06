@@ -55,7 +55,7 @@ export default function AIReady() {
       </div>
 
       {/* Right: Text content */}
-      <div className="flex w-full max-w-[535px] flex-col gap-[24px] sm:gap-[32px]">
+      <div className="flex w-full max-w-[535px] flex-col gap-[24px] sm:gap-[32px] mt-8 md:mt-0">
         <div className="flex flex-col gap-[8px]">
           <h2 className="text-[28px] font-semibold leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[36px] md:text-[44px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
             Results-Driven Automation
@@ -68,17 +68,11 @@ export default function AIReady() {
         {/* Numbered features */}
         <div className="flex flex-col gap-[24px]">
           <div className="flex gap-4 sm:gap-5xl">
-
-
-
             <div>
               <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
                 <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">1</h1>
               </div>
             </div>
-
-
-
             <div className="flex flex-col gap-[8px] sm:gap-[10px]">
               <p className="text-[17px] font-semibold leading-[1.2] text-[#030303] sm:text-[20px] dark:text-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 AI That Optimizes Every Campaign
@@ -90,7 +84,7 @@ export default function AIReady() {
           </div>
 
           <div className="flex gap-[16px] sm:gap-[20px]">
-           <div>
+            <div>
               <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
                 <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">2</h1>
               </div>

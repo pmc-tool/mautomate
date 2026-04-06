@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "../../client/utils";
-import featureTabScreenshot from "../../client/static/landing/feature-tab-screenshot.png";
+
+import socialConnect from "../../client/static/landing/screen/social-connect.png";
+import socialConnectd from "../../client/static/landing/screen/social-connectd.png";
+import chatBot from "../../client/static/landing/screen/chatbot.png";
+import chatBotd from "../../client/static/landing/screen/chatbotd.png";
+import brandVoice from "../../client/static/landing/screen/brand-voice.png";
+import brandVoiced from "../../client/static/landing/screen/brand-voiced.png";
+import aiImage from "../../client/static/landing/screen/ai-image.png";
+import aiImaged from "../../client/static/landing/screen/ai-imaged.png";
+import socialMediaAgetn from "../../client/static/landing/screen/social-media-agent.png";
+import socialMediaAgetnd from "../../client/static/landing/screen/social-media-agentd.png";
+import seoAgent from "../../client/static/landing/screen/seo-agent.png";
+import seoAgentd from "../../client/static/landing/screen/seo-agentd.png";
 
 interface FeatureTab {
   name: string;
   subtitle: string;
   title: string;
   description: string;
+  light: string;
+  dark: string;
 }
 
 const tabs: FeatureTab[] = [
@@ -16,6 +30,8 @@ const tabs: FeatureTab[] = [
     title: "Social Connect",
     description:
       "Writer is designed to help you generate high-quality texts instantly, without breaking a sweat. With our intuitive interface and powerful features, you can easily edit, export, or publish your AI-generated result.",
+    light: socialConnect,
+    dark: socialConnectd,
   },
   {
     name: "Brand Voice",
@@ -23,6 +39,8 @@ const tabs: FeatureTab[] = [
     title: "Brand Voice",
     description:
       "Create consistent brand voice profiles that guide all AI-generated content. Ensure every post, email, and message sounds authentically you across all channels.",
+    light: brandVoice,
+    dark: brandVoiced,
   },
   {
     name: "Chatbot",
@@ -30,6 +48,8 @@ const tabs: FeatureTab[] = [
     title: "Chatbot",
     description:
       "Deploy AI chatbots trained on your data across websites, WhatsApp, Messenger, and more. Handle support, capture leads, and engage visitors 24/7.",
+    light: chatBot,
+    dark: chatBotd,
   },
   {
     name: "AI Image Generator",
@@ -37,6 +57,8 @@ const tabs: FeatureTab[] = [
     title: "AI Image Generator",
     description:
       "Create professional marketing images, social media graphics, and ad creatives with AI. No design skills required — just describe what you need.",
+    light: aiImage,
+    dark: aiImaged,
   },
   {
     name: "Social Media Agent",
@@ -44,6 +66,8 @@ const tabs: FeatureTab[] = [
     title: "Social Media Agent",
     description:
       "Let AI handle your social media strategy. Auto-generate posts, optimize timing, respond to engagement, and grow your following on autopilot.",
+    light: socialMediaAgetn,
+    dark: socialMediaAgetnd,
   },
   {
     name: "SEO Agent",
@@ -51,17 +75,29 @@ const tabs: FeatureTab[] = [
     title: "SEO Agent",
     description:
       "Generate SEO-optimized blog posts, meta descriptions, and content briefs. Rank higher with AI that understands search intent and your brand voice.",
+    light: seoAgent,
+    dark: seoAgentd,
   },
 ];
 
 export default function FeatureTabs() {
   const [activeTab, setActiveTab] = useState(0);
+  const [isDark, setIsDark] = useState(false);
   const active = tabs[activeTab];
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const check = () => setIsDark(document.documentElement.classList.contains("dark") || mq.matches);
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    mq.addEventListener("change", check);
+    return () => { observer.disconnect(); mq.removeEventListener("change", check); };
+  }, []);
 
   return (
     <div className="mx-auto my-16 max-w-7xl px-4 sm:my-24 md:px-6 md:my-32">
       <div className="overflow-hidden rounded-4xl bg-[#9b7e69] sm:rounded-8xl dark:bg-card">
-        {/* Tab buttons — horizontal scroll on mobile, grid on tablet, flex on desktop */}
         <div className="-mb-px flex gap-[12px] overflow-x-auto px-4 pt-4 sm:gap-[16px] sm:px-6 sm:pt-6 md:gap-[20px] md:px-8  lg:justify-center lg:gap-[32px] lg:px-[64px] lg:pt-[32px]">
           {tabs.map((tab, idx) => (
             <button
@@ -79,13 +115,13 @@ export default function FeatureTabs() {
         </div>
 
         {/* Content area — stack on mobile, side-by-side on desktop */}
-        {/* flex flex-col gap-[24px] px-4 pb-6 pt-6 sm:gap-[32px] sm:px-6 sm:pb-8 sm:pt-8 md:px-8 lg:flex-row lg:gap-[40px] lg:px-[64px] lg:pb-0 lg:pt-[56px] */}
+      
         <div className="md:flex items-center gap-6 overflow-hidden p-8 md:p-16  " >
           {/* Left: Screenshot */}
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1/2">
             <div className="absolute inset-[8px] overflow-hidden rounded-2xl sm:inset-[12px] sm:rounded-2xl">
               <img
-                src={featureTabScreenshot}
+                src={isDark ? active.dark : active.light}
                 alt={active.title}
                 className="h-full w-full rounded-2xl object-cover"
               />
