@@ -1378,6 +1378,11 @@ action deleteVideoGeneration {
   entities: [VideoGeneration, UserExtension]
 }
 
+action improveVideoPrompt {
+  fn: import { improveVideoPrompt } from "@src/extensions/video-studio/generationOperations",
+  entities: [UserExtension, Setting, User, CreditTransaction]
+}
+
 // Job: Poll fal.ai for processing videos
 job videoStatusCheck {
   executor: PgBoss,

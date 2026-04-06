@@ -8,6 +8,7 @@ import type {
   CheckVideoStatus,
   RetryVideoGeneration,
   DeleteVideoGeneration,
+  ImproveVideoPrompt,
 } from "wasp/server/operations";
 import { getModelByKey } from "./modelRegistry";
 import { submitGeneration, checkStatus, getResult } from "./falClient";
@@ -430,4 +431,51 @@ export const deleteVideoGeneration: DeleteVideoGeneration<
   }
 
   await context.entities.VideoGeneration.delete({ where: { id: args.id } });
+};
+
+// ---------------------------------------------------------------------------
+// Improve Prompt via prompts.chat API
+// ---------------------------------------------------------------------------
+
+const PROMPTS_CHAT_API_KEY =
+  "pchat_626f7de4db37fce6eb24680d6b69d71a1c96a5daf9fe07de5012d21ce22f384f";
+
+export const improveVideoPrompt: ImproveVideoPrompt<
+  { prompt: string },
+  { improved: string }
+> = async (args, context) => {
+  if (!context.user) throw new HttpError(401, "Not authenticated");
+  await ensureExtensionActive(context.entities.UserExtension, context.user.id);
+
+  if (!args.prompt || args.prompt.trim().length < 5) {
+    throw new HttpError(400, "Prompt must be at least 5 characters");
+  }
+
+  // Deduct credits before calling the API
+  await deductCredits(
+    prisma,
+    context.user.id,
+    CreditActionType.PromptEnhance,
+  );
+
+  const res = await fetch("https://prompts.chat/api/improve-prompt", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": PROMPTS_CHAT_API_KEY,
+    },
+    body: JSON.stringify({
+      prompt: args.prompt,
+      outputType: "text",
+      outputFormat: "text",
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "Unknown error");
+    throw new HttpError(502, `Prompt improvement failed: ${errText}`);
+  }
+
+  const data = await res.json();
+  return { improved: data.improved || args.prompt };
 };

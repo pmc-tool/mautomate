@@ -26,6 +26,7 @@ export enum CreditActionType {
   StoryHigh = "story_high",
   StoryHighLong = "story_high_long",
   StorySceneRegen = "story_scene_regen",
+  PromptEnhance = "prompt_enhance",
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +57,7 @@ export const CREDIT_COSTS: Record<CreditActionType, number> = {
   [CreditActionType.StoryHigh]: 450,
   [CreditActionType.StoryHighLong]: 900,
   [CreditActionType.StorySceneRegen]: 30,
+  [CreditActionType.PromptEnhance]: 2,
 };
 
 // ---------------------------------------------------------------------------
@@ -156,4 +158,5 @@ export const ACTION_LABELS: Record<CreditActionType, string> = {
   [CreditActionType.StoryHigh]: "Story video (Ultra ≤1min)",
   [CreditActionType.StoryHighLong]: "Story video (Ultra >1min)",
   [CreditActionType.StorySceneRegen]: "Story scene regeneration",
+  [CreditActionType.PromptEnhance]: "AI prompt enhancement",
 };
