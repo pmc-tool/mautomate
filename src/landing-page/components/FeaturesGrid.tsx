@@ -22,7 +22,7 @@ const platforms = [
 
 export default function SocialConnections() {
   return (
-    <div className="mx-auto my-16 flex max-w-[1200px] flex-col items-center gap-[24px] px-4 sm:my-24 sm:gap-[32px] sm:px-6 md:my-32 lg:px-8" id="features">
+    <div className="mx-auto my-16 flex max-w-7xl flex-col items-center gap-[24px] px-4 md:px-6 sm:my-24 sm:gap-[32px]  md:my-32 border-red-500" id="features">
       <div className="flex flex-col items-center gap-[10px] text-center">
         <h2 className="text-[26px] font-semibold leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[36px] md:text-[44px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
           Power Your Social Connections Automatically
@@ -36,7 +36,7 @@ export default function SocialConnections() {
         {platforms.map((platform) => (
           <div
             key={platform.name}
-            className="flex items-center gap-[8px] rounded-[10px] bg-white py-[8px] pl-[8px] pr-[14px] transition-all hover:shadow-md sm:gap-[12px] sm:rounded-[12px] sm:py-[12px] sm:pl-[12px] sm:pr-[20px] dark:bg-background"
+            className="flex items-center gap-[8px] rounded-[10px] bg-white py-[8px] pl-[8px] pr-[14px] transition-all hover:shadow-md sm:gap-[12px] sm:rounded-[12px] sm:py-[12px] sm:pl-[12px] sm:pr-[20px] dark:bg-[#36302C]"
           >
             <img
               src={platform.icon}

@@ -246,9 +246,9 @@
   }
 
   .dark {
-    --background: 210 50% 5%;
+    --background: 30 10% 8%;
     --foreground: 0 0% 98%;
-    --card: 210 50% 5%;
+    --card: 16 12% 14%;
     --card-foreground: 0 0% 98%;
     --card-accent: 31 57% 93%;
     --card-accent-foreground: 0 0% 3.9%;

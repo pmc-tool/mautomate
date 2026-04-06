@@ -59,12 +59,12 @@ export default function FeatureTabs() {
   const active = tabs[activeTab];
 
   return (
-    <div className="mx-auto my-16 max-w-[1138px] px-4 sm:my-24 sm:px-6 md:my-32 lg:px-8">
-      <div className="overflow-hidden rounded-[20px] bg-[#9b7e69] sm:rounded-[32px] dark:bg-card">
+    <div className="mx-auto  max-w-7xl px-4 md:px-6 sm:my-24 md:my-32 lg:px-8" id="features">
+      <div className="overflow-hidden rounded-[20px] bg-[#9b7e69] sm:rounded-[32px] dark:bg-card p-8">
         {/* Tab buttons — horizontal scroll on mobile, grid on tablet, flex on desktop */}
-        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4 pt-4 sm:gap-[16px] sm:px-6 sm:pt-6 md:flex-wrap md:justify-center md:gap-[20px] md:px-8 lg:flex-nowrap lg:gap-[32px] lg:px-[64px] lg:pt-[32px]">
+        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4  sm:gap-[16px] sm:px-6  md:flex-wrap md:justify-center md:gap-[20px] md:px-8 lg:flex-nowrap lg:gap-[32px] ">
           {tabs.map((tab, idx) => (
-            <button
+            <button 
               key={tab.name}
               onClick={() => setActiveTab(idx)}
               className={cn(

@@ -1,17 +1,23 @@
-import aiReady from "../client/static/landing/ai-ready.png";
+import aiReadydark from "../client/static/landing/ai-ready-dark.png";
+import aiReadywhite from "../client/static/landing/ai-ready-white.png";
+
 import playIcon from "../client/static/landing/play-icon.svg";
 import numberOval from "../client/static/landing/number-oval.svg";
 
 export default function AIReady() {
   return (
-    <div className="mx-auto my-16 flex max-w-[1200px] flex-col items-center gap-[32px] px-4 sm:my-24 sm:px-6 md:my-32 md:flex-row md:items-start md:gap-[50px] lg:gap-[90px] lg:px-8">
+    <div className="mx-auto my-16 flex max-w-7xl flex-col items-center  px-4 sm:my-24 sm:px-6 md:my-32 md:flex-row md:items-center md:gap-[50px] lg:gap-12 lg:px-8">
       {/* Left: AI Ready illustration with floating labels */}
-      <div className="relative mx-auto h-[280px] w-full max-w-[340px] shrink-0 overflow-hidden sm:h-[350px] sm:max-w-[400px] md:h-[436px] md:max-w-[449px]">
+      <div className="relative mx-auto h-[280px] w-full max-w-4xl shrink-0 overflow-hidden sm:h-[350px] sm:max-w-[400px] md:h-[436px] md:max-w-[449px]">
         <img
-          src={aiReady}
+          src={aiReadywhite}
           alt="AI Ready"
-          className="absolute inset-0 h-full w-[115.81%] max-w-none object-cover"
-          style={{ left: "-8.24%" }}
+          className="absolute inset-0 h-full w-full object-cover dark:hidden"
+        />
+        <img
+          src={aiReadydark}
+          alt="AI Ready"
+          className="absolute inset-0 hidden h-full w-full object-cover dark:block"
         />
         {/* Play button overlay — uses percentage positioning */}
         <div className="absolute left-[45%] top-[43%] flex h-[44px] w-[44px] items-center justify-center rounded-full bg-[#bd711d] p-[12px] sm:h-[50px] sm:w-[50px] sm:p-[14px] md:h-[58px] md:w-[58px] md:p-[16px]">

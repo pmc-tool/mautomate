@@ -27,7 +27,7 @@ export default function Footer({
   const privacyUrl = branding.privacyUrl || "/privacy";
 
   return (
-    <footer className="bg-[#f8f4f1] dark:bg-[#29231F]">
+    <footer className="bg-[#f8f4f1] dark:bg-card">
       <div className="mx-auto max-w-[1280px] px-4 pb-[20px] pt-0 sm:px-6 md:px-8 lg:px-[95px]">
         {/* Main content area with bottom border */}
         <div className="border-b border-[rgba(10,15,20,0.08)] pb-[20px] pt-[60px] sm:pt-[80px] md:pt-[100px] lg:pt-[132px] dark:border-border">
