@@ -466,6 +466,21 @@ action setHelpArticleStatus {
   entities: [HelpArticle, User]
 }
 
+route AboutPageRoute { path: "/about", to: AboutPage }
+page AboutPage {
+  component: import AboutPage from "@src/landing-page/AboutPage"
+}
+
+route TermsPageRoute { path: "/terms", to: TermsPage }
+page TermsPage {
+  component: import TermsPage from "@src/landing-page/TermsPage"
+}
+
+route PrivacyPageRoute { path: "/privacy", to: PrivacyPage }
+page PrivacyPage {
+  component: import PrivacyPage from "@src/landing-page/PrivacyPage"
+}
+
 route NotFoundRoute { path: "*", to: NotFoundPage }
 page NotFoundPage {
   component: import { NotFoundPage } from "@src/client/components/NotFoundPage"

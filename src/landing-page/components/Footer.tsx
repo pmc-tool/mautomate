@@ -135,14 +135,14 @@ export default function Footer({
           </p>
           <div className="flex gap-[16px] sm:gap-[27px]">
             <a
-              href={termsUrl.startsWith("http") ? termsUrl : `https://${branding.domain || "mautomate.ai"}${termsUrl}`}
+              href={termsUrl}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
               Terms of Service
             </a>
             <a
-              href={privacyUrl.startsWith("http") ? privacyUrl : `https://${branding.domain || "mautomate.ai"}${privacyUrl}`}
+              href={privacyUrl}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >

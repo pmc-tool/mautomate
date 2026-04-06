@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { cn } from "../../client/utils";
-
 import socialConnect from "../../client/static/landing/screen/social-connect.png";
 import socialConnectd from "../../client/static/landing/screen/social-connectd.png";
 import chatBot from "../../client/static/landing/screen/chatbot.png";
