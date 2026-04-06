@@ -1,7 +1,7 @@
 import { useBranding } from "../../branding/BrandingContext";
 import useColorMode from "../../client/hooks/useColorMode";
 import footerLogoLight from "../../client/static/logo-light.png";
-import footerLogoDark from "../../client/static/logo-dark.png";
+import footerLogoDark from "../../client/static/logo-dark2.png";
 
 interface NavigationItem {
   name: string;
@@ -27,7 +27,7 @@ export default function Footer({
   const privacyUrl = branding.privacyUrl || "/privacy";
 
   return (
-    <footer className="bg-[#f8f4f1] dark:bg-card">
+    <footer className="bg-[#f8f4f1] dark:bg-[#29231F]">
       <div className="mx-auto max-w-[1280px] px-4 pb-[20px] pt-0 sm:px-6 md:px-8 lg:px-[95px]">
         {/* Main content area with bottom border */}
         <div className="border-b border-[rgba(10,15,20,0.08)] pb-[20px] pt-[60px] sm:pt-[80px] md:pt-[100px] lg:pt-[132px] dark:border-border">
@@ -112,19 +112,19 @@ export default function Footer({
           />
           {/* Top fade-out gradient overlay — dark mode */}
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-[80px] bg-gradient-to-b from-card to-transparent sm:h-[105px] dark:block"
+            className="pointer-events-none inset-x-0 top-0 z-10 hidden h-[80px] absolute from-card to-transparent sm:h-[105px] dark:block"
           />
           {/* Big logo as watermark — light mode */}
           <img
             src={footerLogoLight}
             alt={branding.appName}
-            className="absolute  left-1/2 w-full max-w-[900px] -translate-x-1/2 object-contain dark:hidden"
+            className="absolute  left-1/2 w-full -translate-x-1/2 object-contain dark:hidden"
           />
           {/* Big logo as watermark — dark mode */}
           <img
             src={footerLogoDark}
             alt={branding.appName}
-            className="absolute  left-1/2 hidden w-full max-w-[900px] -translate-x-1/2 opacity-30  dark:block"
+            className="absolute  left-1/2 hidden w-full -translate-x-1/2   dark:block"
           />
         </div>
 
