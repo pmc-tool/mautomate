@@ -59,12 +59,12 @@ export default function FeatureTabs() {
   const active = tabs[activeTab];
 
   return (
-    <div className="mx-auto  max-w-7xl px-4 md:px-6 sm:my-24 md:my-32 lg:px-8" id="features">
-      <div className="overflow-hidden rounded-[20px] bg-[#9b7e69] sm:rounded-[32px] dark:bg-card p-8">
+    <div className="mx-auto my-16 max-w-7xl px-4 sm:my-24 md:px-6 md:my-32">
+      <div className="overflow-hidden rounded-4xl bg-[#9b7e69] sm:rounded-8xl dark:bg-card">
         {/* Tab buttons — horizontal scroll on mobile, grid on tablet, flex on desktop */}
-        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4  sm:gap-[16px] sm:px-6  md:flex-wrap md:justify-center md:gap-[20px] md:px-8 lg:flex-nowrap lg:gap-[32px] ">
+        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4 pt-4 sm:gap-[16px] sm:px-6 sm:pt-6 md:gap-[20px] md:px-8  lg:justify-center lg:gap-[32px] lg:px-[64px] lg:pt-[32px]">
           {tabs.map((tab, idx) => (
-            <button 
+            <button
               key={tab.name}
               onClick={() => setActiveTab(idx)}
               className={cn(
@@ -79,21 +79,23 @@ export default function FeatureTabs() {
         </div>
 
         {/* Content area — stack on mobile, side-by-side on desktop */}
-        <div className="flex flex-col gap-[24px] px-4 pb-6 pt-6 sm:gap-[32px] sm:px-6 sm:pb-8 sm:pt-8 md:px-8 lg:flex-row lg:gap-[40px] lg:px-[64px] lg:pb-0 lg:pt-[56px]">
+        {/* flex flex-col gap-[24px] px-4 pb-6 pt-6 sm:gap-[32px] sm:px-6 sm:pb-8 sm:pt-8 md:px-8 lg:flex-row lg:gap-[40px] lg:px-[64px] lg:pb-0 lg:pt-[56px] */}
+        <div className="md:flex items-center gap-6 overflow-hidden p-8 md:p-16  " >
           {/* Left: Screenshot */}
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1">
-            <div className="absolute inset-[8px] overflow-hidden rounded-[6px] sm:inset-[12px] sm:rounded-[8px]">
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1/2">
+            <div className="absolute inset-[8px] overflow-hidden rounded-2xl sm:inset-[12px] sm:rounded-2xl">
               <img
                 src={featureTabScreenshot}
                 alt={active.title}
-                className="h-full w-full rounded-[7px] object-cover"
+                className="h-full w-full rounded-2xl object-cover"
               />
             </div>
           </div>
 
           {/* Right: Description */}
-          <div className="flex flex-col gap-[12px] pb-4 text-white sm:gap-[20px] lg:w-[380px] lg:shrink-0 lg:pb-0 lg:pt-[103px]">
-            <p className="text-[24px] font-semibold leading-[1.2] tracking-[0.4px] sm:text-[32px] lg:text-[40px]" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+         
+          <div className="flex-1/2 flex  flex-col gap-3  text-white sm:gap-5  pt-4 md:p-4 ">
+            <p className="text-xl font-semibold leading-[1.2] tracking-[0.4px] sm:text-[32px] lg:text-[40px]" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
               {active.title}
             </p>
             <p className="text-[14px] leading-[1.5] opacity-60 sm:text-[15px] sm:leading-[22px] lg:text-[17px] lg:leading-[24px]">
