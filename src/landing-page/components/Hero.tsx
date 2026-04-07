@@ -1,7 +1,9 @@
 import { Link as WaspRouterLink, routes } from "wasp/client/router";
 import { useBranding } from "../../branding/BrandingContext";
-import heroBg from "../../client/static/landing/hero-bg.png";
+import heroBg from "../../client/static/landing/hero-bg2.png";
+import heroBgdark from "../../client/static/landing/hero-bg-dark.png";
 import heroGlow from "../../client/static/landing/hero-glow.svg";
+import heroGlowdark from "../../client/static/landing/hero-dark-glow.svg";
 import growthChart from "../../client/static/landing/growth-chart.svg";
 import badgeIcon from "../../client/static/landing/badge-icon.svg";
 import arrowIcon from "../../client/static/landing/arrow-icon.svg";
@@ -20,7 +22,7 @@ export default function Hero() {
         <img
           src={heroBg}
           alt=""
-          className="absolute left-1/2 top-0 h-[965px] w-[1442px] -translate-x-1/2 object-cover"
+          className="absolute left-1/2 top-0 h-[965px] w-full -translate-x-1/2 object-cover"
         />
         <img
           src={heroGlow}
@@ -31,6 +33,18 @@ export default function Hero() {
 
       {/* Dark mode: CSS gradient background (matching old design) */}
       <div className="pointer-events-none absolute inset-0 -z-10 hidden dark:block" aria-hidden="true">
+        <img
+          src={heroBgdark}
+          alt=""
+          className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 object-cover"
+        />
+        <img
+          src={heroGlowdark}
+          alt=""
+          className="absolute left-[24%] top-[10%] h-[754px] w-[754px] scale-[2.3]"
+        />
+      </div>
+      {/* <div className="pointer-events-none absolute inset-0 -z-10 hidden dark:block" aria-hidden="true">
         <div className="absolute right-0 top-0 w-full transform-gpu overflow-hidden blur-3xl sm:top-0">
           <div
             className="aspect-[1020/880] w-[70rem] flex-none bg-gradient-to-tr from-amber-400 to-purple-300 opacity-10"
@@ -47,7 +61,7 @@ export default function Hero() {
             }}
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="relative mx-auto max-w-[1440px] px-4 pt-[40px] sm:px-6 sm:pt-[60px] lg:px-8">
         {/* Center content column */}
@@ -117,7 +131,7 @@ export default function Hero() {
           </div>
 
           {/* Growth card — RIGHT side, rotated */}
-          <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 lg:block xl:right-[40px]" style={{ transform: "rotate(-36.26deg) translateY(-50%)" }}>
+          <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 lg:block xl:right-[10px]" style={{ transform: "rotate(-36.26deg) translateY(-50%)" }}>
             <div className="rounded-[16px] bg-white/50 px-[20px] pb-[37px] pt-[16px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.1)] backdrop-blur-sm dark:border dark:border-border dark:bg-card/80">
               <div className="flex w-[98px] flex-col gap-[4px] leading-[1.6]">
                 <p className="text-center text-[14px] font-semibold text-[#0a0f14] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
@@ -136,8 +150,11 @@ export default function Hero() {
         </div>
 
         {/* Bottom spacer */}
-        <div className="h-[40px] sm:h-[80px]" />
+        <div className="h-[40px] sm:h-[80px] " />
       </div>
+
+
+      
     </div>
   );
 }

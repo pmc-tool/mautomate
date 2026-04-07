@@ -1,17 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "../../client/utils";
 import socialConnect from "../../client/static/landing/screen/social-connect.png";
-import socialConnectd from "../../client/static/landing/screen/social-connectd.png";
 import chatBot from "../../client/static/landing/screen/chatbot.png";
-import chatBotd from "../../client/static/landing/screen/chatbotd.png";
 import brandVoice from "../../client/static/landing/screen/brand-voice.png";
-import brandVoiced from "../../client/static/landing/screen/brand-voiced.png";
 import aiImage from "../../client/static/landing/screen/ai-image.png";
-import aiImaged from "../../client/static/landing/screen/ai-imaged.png";
 import socialMediaAgetn from "../../client/static/landing/screen/social-media-agent.png";
-import socialMediaAgetnd from "../../client/static/landing/screen/social-media-agentd.png";
 import seoAgent from "../../client/static/landing/screen/seo-agent.png";
-import seoAgentd from "../../client/static/landing/screen/seo-agentd.png";
 
 interface FeatureTab {
   name: string;
@@ -19,7 +13,6 @@ interface FeatureTab {
   title: string;
   description: string;
   light: string;
-  dark: string;
 }
 
 const tabs: FeatureTab[] = [
@@ -30,7 +23,7 @@ const tabs: FeatureTab[] = [
     description:
       "Writer is designed to help you generate high-quality texts instantly, without breaking a sweat. With our intuitive interface and powerful features, you can easily edit, export, or publish your AI-generated result.",
     light: socialConnect,
-    dark: socialConnectd,
+
   },
   {
     name: "Brand Voice",
@@ -39,7 +32,7 @@ const tabs: FeatureTab[] = [
     description:
       "Create consistent brand voice profiles that guide all AI-generated content. Ensure every post, email, and message sounds authentically you across all channels.",
     light: brandVoice,
-    dark: brandVoiced,
+
   },
   {
     name: "Chatbot",
@@ -48,7 +41,7 @@ const tabs: FeatureTab[] = [
     description:
       "Deploy AI chatbots trained on your data across websites, WhatsApp, Messenger, and more. Handle support, capture leads, and engage visitors 24/7.",
     light: chatBot,
-    dark: chatBotd,
+
   },
   {
     name: "AI Image Generator",
@@ -57,7 +50,7 @@ const tabs: FeatureTab[] = [
     description:
       "Create professional marketing images, social media graphics, and ad creatives with AI. No design skills required — just describe what you need.",
     light: aiImage,
-    dark: aiImaged,
+
   },
   {
     name: "Social Media Agent",
@@ -66,7 +59,7 @@ const tabs: FeatureTab[] = [
     description:
       "Let AI handle your social media strategy. Auto-generate posts, optimize timing, respond to engagement, and grow your following on autopilot.",
     light: socialMediaAgetn,
-    dark: socialMediaAgetnd,
+
   },
   {
     name: "SEO Agent",
@@ -75,24 +68,13 @@ const tabs: FeatureTab[] = [
     description:
       "Generate SEO-optimized blog posts, meta descriptions, and content briefs. Rank higher with AI that understands search intent and your brand voice.",
     light: seoAgent,
-    dark: seoAgentd,
+
   },
 ];
 
 export default function FeatureTabs() {
   const [activeTab, setActiveTab] = useState(0);
-  const [isDark, setIsDark] = useState(false);
   const active = tabs[activeTab];
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const check = () => setIsDark(document.documentElement.classList.contains("dark") || mq.matches);
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    mq.addEventListener("change", check);
-    return () => { observer.disconnect(); mq.removeEventListener("change", check); };
-  }, []);
 
   return (
     <div className="mx-auto my-16 max-w-7xl px-4 sm:my-24 md:px-6 md:my-32">
@@ -120,7 +102,7 @@ export default function FeatureTabs() {
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1/2">
             <div className="absolute inset-[8px] overflow-hidden rounded-2xl sm:inset-[12px] sm:rounded-2xl">
               <img
-                src={isDark ? active.dark : active.light}
+                src={active.light}
                 alt={active.title}
                 className="h-full w-full rounded-2xl object-cover"
               />
