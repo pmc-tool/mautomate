@@ -342,11 +342,20 @@
 
 /* FullCalendar toolbar button overrides */
 .fc .fc-button-active {
-  color: #000 !important;
+  color: #fff !important;
 }
 .dark .fc .fc-button-active {
   color: #0a0f14 !important;
 }
 .fc .fc-button:hover {
+  color: #fff !important;
+}
+.dark .fc .fc-button:hover {
   color: #0a0f14 !important;
+}
+.fc .fc-today-button:hover {
+  color: #000 !important;
+}
+.dark .fc .fc-today-button:hover {
+  color: #fff !important;
 }
