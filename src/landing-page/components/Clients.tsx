@@ -24,7 +24,7 @@ const logos = [
 
 export default function Clients() {
   return (
-    <div className="mx-auto mt-8 flex max-w-7xl flex-col items-center px-4 pb-[14px] md:px-6">
+    <div className="mx-auto -mt-1 flex max-w-7xl flex-col items-center px-4 pb-[14px] md:px-6">
 
 
       {/* Mobile: horizontal scroll / Desktop: spread out */}

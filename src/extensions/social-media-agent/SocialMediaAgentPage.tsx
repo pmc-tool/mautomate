@@ -91,7 +91,7 @@ export default function SocialMediaAgentPage({ user }: { user: AuthUser }) {
       <div className="space-y-8">
         {/* Hero Banner — MagicAI-style with background image + video */}
         <div
-          className="relative flex flex-wrap items-center overflow-hidden rounded-2xl bg-cover bg-top dark:bg-white/[3%]"
+          className="relative flex items-center justify-between overflow-hidden rounded-2xl bg-cover bg-top dark:bg-white/[3%]"
           style={{ backgroundImage: `url(${bannerBgImg})` }}
         >
           {/* Dark mode background override */}
@@ -104,7 +104,7 @@ export default function SocialMediaAgentPage({ user }: { user: AuthUser }) {
           {/* Left Content */}
           <div className="relative z-10 w-full py-12 px-5 sm:py-16 lg:w-1/2 lg:px-12">
             <div className="mb-3 flex items-center gap-2">
-              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs dark:bg-white/20 dark:text-white dark:border-white/30">
+              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs   dark:border-white/30">
                 <Zap className="mr-1 h-3 w-3" />
                 AI-Powered
               </Badge>
@@ -114,10 +114,10 @@ export default function SocialMediaAgentPage({ user }: { user: AuthUser }) {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-gray-800">
               We're your social media agents.
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-white/70">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-gray-700">
               We learn and improve over time. Create AI agents that generate, schedule, and manage social media content across multiple platforms.
             </p>
             <div className="mt-5 flex gap-3">
@@ -134,7 +134,7 @@ export default function SocialMediaAgentPage({ user }: { user: AuthUser }) {
           </div>
 
           {/* Right Video */}
-          <div className="relative z-10 flex w-full justify-center max-lg:order-first lg:w-1/2">
+          <div className="relative z-1 flex w-full justify-end max-lg:order-first lg:w-1/2">
             <video
               className="max-w-[min(100%,650px)] mix-blend-darken dark:hidden"
               width="1200"
@@ -157,6 +157,44 @@ export default function SocialMediaAgentPage({ user }: { user: AuthUser }) {
             />
           </div>
         </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         {/* Stats Row */}
         {agents && agents.length > 0 && (

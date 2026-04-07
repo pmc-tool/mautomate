@@ -72,20 +72,20 @@ export default function VideoStudioPage({ user }: { user: AuthUser }) {
           />
 
           {/* Left Content */}
-          <div className="relative z-10 w-full py-12 px-5 sm:py-16 lg:w-1/2 lg:px-12">
+          <div className="relative z-1 w-full py-12 px-5 sm:py-16 lg:w-1/2 lg:px-12">
             <div className="mb-3 flex items-center gap-2">
-              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs dark:bg-white/20 dark:text-white dark:border-white/30">
+              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs   ">
                 <Zap className="mr-1 h-3 w-3" />
                 21 AI Models
               </Badge>
-              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs dark:bg-white/20 dark:text-white dark:border-white/30">
+              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs   ">
                 4 Generation Types
               </Badge>
             </div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-gray-800">
               Video Studio
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-white/80">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-gray-700">
               Create stunning AI videos — text-to-video, image animation, talking-head avatars, and video upscaling. All powered by the latest AI models.
             </p>
             <div className="mt-5 flex gap-3">
@@ -112,7 +112,7 @@ export default function VideoStudioPage({ user }: { user: AuthUser }) {
           </div>
 
           {/* Right Illustration */}
-          <div className="relative z-10 hidden w-1/2 lg:flex items-center justify-center py-8">
+          <div className="relative z-1 hidden w-1/2 lg:flex items-center justify-center py-8">
             <img
               src={aiAvatarImg}
               alt="AI Video Studio"

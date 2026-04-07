@@ -17,11 +17,11 @@ export function CreditsWidget() {
     <Link
       to="/account"
       className={cn(
-        "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent",
-        isLow && "border-yellow-500/50 bg-yellow-500/5",
+        "group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+        isLow && "border-yellow-500/50 bg-yellow-500/5 ",
       )}
     >
-      <Coins className="h-4 w-4 text-muted-foreground" />
+      <Coins className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
       <div className="flex flex-col">
         <span className="font-medium">
           {totalBalance.toLocaleString()} credits

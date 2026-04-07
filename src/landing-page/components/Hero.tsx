@@ -63,7 +63,7 @@ export default function Hero() {
         </div>
       </div> */}
 
-      <div className="relative mx-auto max-w-[1440px] px-4 pt-[40px] sm:px-6 sm:pt-[60px] lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 pt-[40px] sm:px-6 sm:pt-[60px] lg:px-8">
         {/* Center content column */}
         <div className="mx-auto flex max-w-[593px] flex-col items-center text-center">
           {/* Pill badge */}
@@ -150,11 +150,9 @@ export default function Hero() {
         </div>
 
         {/* Bottom spacer */}
-        <div className="h-[40px] sm:h-[80px] " />
       </div>
 
-
-      
+      <div className="h-[45px] w-full bg-gradient-to-b from-transparent to-background sm:h-[90px]" />
     </div>
   );
 }
