@@ -56,7 +56,7 @@ const DAYS = [
   { key: "sunday", label: "S" },
 ] as const;
 
-const FORM_STEPS = 6;
+const FORM_STEPS = 3;
 
 /* ─── Input class helpers ─── */
 const inputCls = "h-12 rounded-[10px] bg-foreground/5 border-0 text-sm backdrop-blur-sm focus-visible:ring-1 focus-visible:ring-[#bd711d]/30";
@@ -129,14 +129,12 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
       case 1:
         if (!name.trim()) { setStepError("Agent name is required."); return false; }
         return true;
-      case 2:
-        if (seedKeywords.split("\n").map(s => s.trim()).filter(Boolean).length === 0) {
-          setStepError("Enter at least one keyword."); return false;
-        }
-        return true;
-      case 3:
+      case 2: {
+        const kw = seedKeywords.split("\n").map(s => s.trim()).filter(Boolean);
+        if (kw.length === 0) { setStepError("Enter at least one keyword."); return false; }
         if (contentTypes.length === 0) { setStepError("Select at least one content type."); return false; }
         return true;
+      }
       default:
         return true;
     }
@@ -156,7 +154,7 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
   /* ─── Submit ─── */
   async function handleSubmit() {
     setStepError("");
-    setCurrentStep(7); // processing
+    setCurrentStep(4); // processing
     try {
       const payload: Record<string, any> = {
         name: name.trim(),
@@ -182,10 +180,10 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
       } else {
         await createSeoAgent(payload);
       }
-      setCurrentStep(8); // success
+      setCurrentStep(5); // success
     } catch (err: any) {
       toast({ title: "Error", description: err?.message ?? "Failed to save.", variant: "destructive" });
-      setCurrentStep(6); // back to last form step
+      setCurrentStep(3); // back to last form step (review)
     }
   }
 
@@ -249,7 +247,7 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
           </div>
         );
 
-      /* ── Step 1: Domain & Niche ── */
+      /* ── Step 1: Basics ── */
       case 1:
         return (
           <div className="text-center">
@@ -289,183 +287,140 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
           </div>
         );
 
-      /* ── Step 2: Seed Keywords ── */
+      /* ── Step 2: Content Setup ── */
       case 2:
         return (
           <div className="text-center">
-            <p className="text-sm opacity-50 mb-1">What should I research?</p>
-            <h2 className="text-[22px] font-medium leading-tight mb-8">Seed keywords</h2>
-            <div className="text-left">
-              <Textarea
-                value={seedKeywords}
-                onChange={(e) => { setSeedKeywords(e.target.value); setStepError(""); }}
-                placeholder={"marketing automation\ncontent strategy\nSEO tools\nkeyword research\nlink building"}
-                rows={8}
-                className={textareaCls}
-                autoFocus
-              />
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Enter one keyword per line. We'll discover hundreds of related keywords from these seeds.
-              </p>
-            </div>
-            <ContinueBtn onClick={next} />
-          </div>
-        );
-
-      /* ── Step 3: Content Types ── */
-      case 3:
-        return (
-          <div className="text-center">
-            <p className="text-sm opacity-50 mb-1">What type of content?</p>
-            <h2 className="text-[22px] font-medium leading-tight mb-8">Choose content types</h2>
-            <div className="space-y-3 text-left">
-              {CONTENT_TYPES.map((ct) => {
-                const sel = contentTypes.includes(ct.key);
-                return (
-                  <button
-                    key={ct.key}
-                    type="button"
-                    onClick={() => toggle(contentTypes, ct.key, setContentTypes)}
-                    className={cn(
-                      "group flex w-full items-center gap-4 rounded-2xl border-2 px-5 py-5 text-left transition-all hover:-translate-y-0.5",
-                      sel ? "border-[#bd711d] bg-[#bd711d]/5" : "border-border hover:border-[#bd711d]/30 hover:shadow-md",
-                    )}
-                  >
-                    <div className={cn(
-                      "flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 transition-all shrink-0",
-                      sel ? "border-[#bd711d] bg-[#bd711d]" : "border-muted-foreground/30",
-                    )}>
-                      {sel && <Check className="h-3 w-3 text-white" />}
-                    </div>
-                    <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ backgroundColor: ct.color }} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{ct.label}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{ct.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <ContinueBtn onClick={next} />
-          </div>
-        );
-
-      /* ── Step 4: Content Settings ── */
-      case 4:
-        return (
-          <div className="text-center">
-            <p className="text-sm opacity-50 mb-1">Fine-tune the output</p>
-            <h2 className="text-[22px] font-medium leading-tight mb-8">Content settings</h2>
-            <div className="rounded-[20px] border px-5 py-6 space-y-5 text-left">
+            <p className="text-sm opacity-50 mb-1">Configure your content</p>
+            <h2 className="text-[22px] font-medium leading-tight mb-8">Content setup</h2>
+            <div className="space-y-6 text-left">
+              {/* Seed Keywords */}
               <div>
-                <Label className="text-xs font-medium mb-1.5 block">Tone</Label>
-                <Select value={tone} onValueChange={setTone}>
-                  <SelectTrigger className={selectCls}><SelectValue placeholder="Select a tone" /></SelectTrigger>
-                  <SelectContent>
-                    {TONES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-medium mb-1.5 block">Seed Keywords *</Label>
+                <Textarea
+                  value={seedKeywords}
+                  onChange={(e) => { setSeedKeywords(e.target.value); setStepError(""); }}
+                  placeholder={"marketing automation\ncontent strategy\nSEO tools\nkeyword research\nlink building"}
+                  rows={6}
+                  className={textareaCls}
+                  autoFocus
+                />
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Enter one keyword per line. We'll discover hundreds of related keywords from these seeds.
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">Language</Label>
-                  <Input value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="en" className={inputCls} />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">Target Word Count</Label>
-                  <Input type="number" min={500} max={10000} value={targetWordCount} onChange={(e) => setTargetWordCount(Number(e.target.value))} className={inputCls} />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">AI Provider</Label>
-                <Select value={aiProvider} onValueChange={setAiProvider}>
-                  <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <ContinueBtn onClick={next} />
-          </div>
-        );
 
-      /* ── Step 5: Schedule ── */
-      case 5:
-        return (
-          <div className="text-center">
-            <p className="text-sm opacity-50 mb-1">How often should I write?</p>
-            <h2 className="text-[22px] font-medium leading-tight mb-8">Set your schedule</h2>
-            <div className="rounded-[20px] border px-5 py-6 space-y-6 text-left">
+              {/* Content Types */}
               <div>
-                <Label className="text-xs font-medium mb-3 block">Active Days</Label>
-                <div className="flex justify-center gap-2">
-                  {DAYS.map((d) => {
-                    const sel = scheduleDays.includes(d.key);
+                <Label className="text-xs font-medium mb-2 block">Content Types *</Label>
+                <div className="space-y-3">
+                  {CONTENT_TYPES.map((ct) => {
+                    const sel = contentTypes.includes(ct.key);
                     return (
                       <button
-                        key={d.key}
+                        key={ct.key}
                         type="button"
-                        onClick={() => toggle(scheduleDays, d.key, setScheduleDays)}
+                        onClick={() => toggle(contentTypes, ct.key, setContentTypes)}
                         className={cn(
-                          "flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition-all",
-                          sel
-                            ? "bg-foreground text-background"
-                            : "bg-foreground/5 text-muted-foreground hover:bg-foreground/10",
+                          "group flex w-full items-center gap-4 rounded-2xl border-2 px-5 py-5 text-left transition-all hover:-translate-y-0.5",
+                          sel ? "border-[#bd711d] bg-[#bd711d]/5" : "border-border hover:border-[#bd711d]/30 hover:shadow-md",
                         )}
                       >
-                        {d.label}
+                        <div className={cn(
+                          "flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 transition-all shrink-0",
+                          sel ? "border-[#bd711d] bg-[#bd711d]" : "border-muted-foreground/30",
+                        )}>
+                          {sel && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ backgroundColor: ct.color }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{ct.label}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{ct.desc}</p>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">Daily Content Count</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={dailyContentCount}
-                  onChange={(e) => setDailyContentCount(Number(e.target.value))}
-                  className={cn(inputCls, "w-32")}
-                />
-                <p className="text-[10px] text-muted-foreground mt-1.5">Posts to generate per active day</p>
+
+              {/* Content Settings */}
+              <div className="rounded-[20px] border px-5 py-6 space-y-5">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Tone</Label>
+                  <Select value={tone} onValueChange={setTone}>
+                    <SelectTrigger className={selectCls}><SelectValue placeholder="Select a tone" /></SelectTrigger>
+                    <SelectContent>
+                      {TONES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">Language</Label>
+                    <Input value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="en" className={inputCls} />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium mb-1.5 block">Target Word Count</Label>
+                    <Input type="number" min={500} max={10000} value={targetWordCount} onChange={(e) => setTargetWordCount(Number(e.target.value))} className={inputCls} />
+                  </div>
+                </div>
               </div>
             </div>
             <ContinueBtn onClick={next} />
           </div>
         );
 
-      /* ── Step 6: WordPress + Submit ── */
-      case 6:
+      /* ── Step 3: Review & Create ── */
+      case 3:
         return (
           <div className="text-center">
-            <p className="text-sm opacity-50 mb-1">Optional integration</p>
-            <h2 className="text-[22px] font-medium leading-tight mb-8">WordPress auto-publish</h2>
+            <p className="text-sm opacity-50 mb-1">Almost there</p>
+            <h2 className="text-[22px] font-medium leading-tight mb-8">Review & {isEdit ? "update" : "create"}</h2>
             <div className="rounded-[20px] border px-5 py-6 space-y-4 text-left">
-              <p className="text-xs text-muted-foreground">
-                Connect your WordPress site to auto-publish generated articles. Skip this if you prefer manual publishing.
-              </p>
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">WordPress URL</Label>
-                <Input value={wpUrl} onChange={(e) => setWpUrl(e.target.value)} placeholder="https://yourblog.com" className={inputCls} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Agent Name</span>
+                <span className="text-sm font-medium">{name.trim()}</span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">Username</Label>
-                  <Input value={wpUsername} onChange={(e) => setWpUsername(e.target.value)} placeholder="admin" className={inputCls} />
+              {niche.trim() && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Niche</span>
+                  <span className="text-sm font-medium">{niche.trim()}</span>
                 </div>
-                <div>
-                  <Label className="text-xs font-medium mb-1.5 block">App Password</Label>
-                  <Input type="password" value={wpPassword} onChange={(e) => setWpPassword(e.target.value)} placeholder={isEdit ? "Enter to update" : "Application password"} className={inputCls} />
+              )}
+              {siteUrl.trim() && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Website</span>
+                  <span className="text-sm font-medium truncate max-w-[220px]">{siteUrl.trim()}</span>
                 </div>
+              )}
+              <div className="border-t pt-4 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Keywords</span>
+                <span className="text-sm font-medium">{seedKeywords.split("\n").map(s => s.trim()).filter(Boolean).length} keyword{seedKeywords.split("\n").map(s => s.trim()).filter(Boolean).length !== 1 ? "s" : ""}</span>
               </div>
-              <div>
-                <Label className="text-xs font-medium mb-1.5 block">Default Category</Label>
-                <Input value={wpCategoryId} onChange={(e) => setWpCategoryId(e.target.value)} placeholder="Blog" className={inputCls} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Content Types</span>
+                <span className="text-sm font-medium">
+                  {contentTypes.map(k => CONTENT_TYPES.find(ct => ct.key === k)?.label).filter(Boolean).join(", ")}
+                </span>
+              </div>
+              {tone && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Tone</span>
+                  <span className="text-sm font-medium">{tone}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Language</span>
+                <span className="text-sm font-medium">{language || "en"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Word Count</span>
+                <span className="text-sm font-medium">{targetWordCount}</span>
               </div>
             </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              You can configure WordPress publishing and scheduling from your agent's Settings tab after creation.
+            </p>
             {stepError && <p className="mt-4 text-center text-xs font-medium text-red-500">{stepError}</p>}
             <button
               type="button"
@@ -476,14 +431,11 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
               {isEdit ? "Update Agent" : "Create Agent"}
               <ArrowRight className="ml-1 h-4 w-4" />
             </button>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              You can skip WordPress and configure it later.
-            </p>
           </div>
         );
 
       /* ── Processing ── */
-      case 7:
+      case 4:
         return (
           <div className="flex flex-col items-center text-center py-12">
             <Loader2 className="h-28 w-28 animate-spin text-[#bd711d]/30 mb-8" />
@@ -495,7 +447,7 @@ export default function SeoAgentFormPage({ user }: { user: AuthUser }) {
         );
 
       /* ── Success ── */
-      case 8:
+      case 5:
         return (
           <div className="flex flex-col items-center text-center">
             <img src={heroIllustrationImg} alt="" className="mx-auto max-w-[260px] mb-8" />

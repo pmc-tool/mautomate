@@ -98,7 +98,7 @@ export default function App() {
   }, [location]);
 
   const isUserDashboard = useMemo(() => {
-    const userDashboardPaths = ["/dashboard", "/file-upload", "/social-connect", "/brand-voice", "/chatbot", "/account", "/checkout", "/marketplace", "/extensions", "/post-hub", "/content-calendar", "/inbox", "/video-studio", "/affiliate", "/long-story"];
+    const userDashboardPaths = ["/dashboard", "/file-upload", "/social-connect", "/brand-voice", "/chatbot", "/account", "/checkout", "/marketplace", "/extensions", "/post-hub", "/content-calendar", "/inbox", "/video-studio", "/affiliate", "/long-story", "/seo"];
     return userDashboardPaths.some(
       (path) => location.pathname === path || location.pathname.startsWith(path + "/")
     );

@@ -16,7 +16,7 @@ import type {
 import OpenAI from "openai";
 import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
-import { encrypt } from "../social-connect/encryption";
+import { encrypt, decrypt } from "../social-connect/encryption";
 import { deductCredits, refundCredits } from "../credits/creditService";
 import { CreditActionType } from "../credits/creditConfig";
 import { getSecureSetting } from "../server/settingEncryption";
@@ -632,10 +632,34 @@ export const saveChannelCredentials: SaveChannelCredentials<
 
   updateData.isConfigured = isConfigured;
 
-  return context.entities.ChatbotChannel.update({
+  const updated = await context.entities.ChatbotChannel.update({
     where: { id },
     data: updateData,
   });
+
+  // Auto-register Telegram webhook when credentials are saved
+  if (channel.channel === "telegram" && isConfigured && updateData.tgBotToken) {
+    try {
+      const decryptedToken = decrypt(updateData.tgBotToken);
+      const serverUrl = process.env.WASP_SERVER_URL || "https://mautomate.ai";
+      const webhookUrl = `${serverUrl}/api/inbox/webhook/telegram`;
+      const resp = await fetch(`https://api.telegram.org/bot${decryptedToken}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: webhookUrl }),
+      });
+      const result = await resp.json();
+      if (!result.ok) {
+        console.error("[Telegram] Failed to set webhook:", result.description);
+      } else {
+        console.log("[Telegram] Webhook registered:", webhookUrl);
+      }
+    } catch (err) {
+      console.error("[Telegram] Error registering webhook:", err);
+    }
+  }
+
+  return updated;
 };
 
 // ---------------------------------------------------------------------------

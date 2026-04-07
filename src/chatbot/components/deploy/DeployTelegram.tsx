@@ -79,6 +79,16 @@ export default function DeployTelegram({ chatbotId, channel }: DeployTelegramPro
         Save Credentials
       </Button>
 
+      {/* Webhook URL */}
+      {channel?.isConfigured && (
+        <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-900/20 p-4">
+          <p className="mb-1 text-sm font-medium text-emerald-700 dark:text-emerald-300">Webhook Active</p>
+          <p className="text-xs text-muted-foreground">
+            Webhook is automatically registered when you save credentials. Your bot should now receive messages.
+          </p>
+        </div>
+      )}
+
       {/* Setup Instructions */}
       <div className="rounded-lg border bg-muted/50 p-4">
         <p className="mb-2 text-sm font-medium">Setup Instructions</p>
@@ -92,7 +102,8 @@ export default function DeployTelegram({ chatbotId, channel }: DeployTelegramPro
             prompts
           </li>
           <li>Copy the bot token provided by BotFather</li>
-          <li>Paste the token above and save</li>
+          <li>Enter the bot username (e.g. @YourBotUsername)</li>
+          <li>Paste the token above and click Save — webhook will be set up automatically</li>
         </ol>
       </div>
     </div>

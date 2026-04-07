@@ -1,42 +1,158 @@
 /**
- * SpyFu API client for keyword research.
- * API docs: https://www.spyfu.com/apis
- * Auth: HTTP Basic with base64 API key
+ * SpyFu API v2 client for SEO keyword research, competitor analysis, and domain stats.
+ * Docs: https://developer.spyfu.com
+ * Auth: HTTP Basic (base64 API key) or query param
  */
 
-const SPYFU_DOMAIN_ORGANIC_URL = "https://www.spyfu.com/apis/url_api/organic_kws";
+// ---------------------------------------------------------------------------
+// Base config
+// ---------------------------------------------------------------------------
 
-interface SpyfuKeywordResult {
+const BASE_URL = "https://api.spyfu.com/apis";
+
+/**
+ * Build auth for SpyFu v2.
+ * The stored API key may be:
+ *   (a) A base64-encoded "USER_ID:SECRET_KEY" string (for Basic auth)
+ *   (b) A raw secret key string
+ * We detect format and apply appropriate auth.
+ */
+function applyAuth(url: URL, headers: Record<string, string>, apiKey: string): void {
+  // The stored API key is already base64-encoded "USER:SECRET" for Basic auth.
+  // Check if it looks like valid base64 by trying to decode it.
+  let isBase64 = false;
+  try {
+    const decoded = Buffer.from(apiKey, "base64").toString("utf8");
+    if (decoded.includes(":") && decoded.split(":").length === 2) {
+      isBase64 = true;
+    }
+  } catch {
+    // Not base64
+  }
+
+  if (isBase64) {
+    // Pass the ORIGINAL base64 string directly — do NOT decode and re-encode
+    // Re-encoding can change padding and break auth
+    headers["Authorization"] = `Basic ${apiKey}`;
+  } else if (apiKey.includes(":")) {
+    // Raw USER:SECRET — encode it
+    headers["Authorization"] = `Basic ${Buffer.from(apiKey).toString("base64")}`;
+  } else {
+    // Standalone secret key — use query param
+    url.searchParams.set("api_key", apiKey);
+  }
+}
+
+function buildHeaders(): Record<string, string> {
+  return { Accept: "application/json" };
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface SpyfuKeywordResult {
   keyword: string;
   searchVolume: number;
   keywordDifficulty: number;
   cpc: number;
-  intent?: string;
+  intent: string;
+  // Rich fields from v2
+  rankingPosition: number | null;
+  rankingPositionChange: number | null;
+  rankingUrl: string | null;
+  seoClicks: number | null;
+  seoClicksChange: number | null;
+  totalMonthlyClicks: number | null;
+  percentMobileSearches: number | null;
+  percentOrganicClicks: number | null;
+  percentNotClicked: number | null;
+  serpFeatures: string | null;
+  serpFirstResult: string | null;
+  isQuestion: boolean;
+  paidCompetitors: number | null;
+  rankingHomepages: number | null;
 }
 
-function buildHeaders(apiKey: string) {
-  return {
-    Authorization: `Basic ${apiKey}`,
-    Accept: "application/json",
-  };
+export interface SpyfuDomainStats {
+  domain: string;
+  strength: number;
+  monthlyOrganicClicks: number;
+  monthlyOrganicValue: number;
+  totalOrganicResults: number;
+  averageOrganicRank: number;
+  monthlyBudget: number;
+  totalAdsPurchased: number;
+  monthlyPaidClicks: number;
+  searchMonth: number;
+  searchYear: number;
 }
 
-/**
- * Get organic keywords for a domain.
- * This is the primary SpyFu API endpoint for keyword research.
- */
+export interface SpyfuKombatResult {
+  keyword: string;
+  searchVolume: number;
+  keywordDifficulty: number;
+  cpc: number;
+  totalMonthlyClicks: number | null;
+  percentOrganicClicks: number | null;
+  serpFeatures: string | null;
+  serpFirstResult: string | null;
+  isQuestion: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Intent classification
+// ---------------------------------------------------------------------------
+
+function classifyIntent(keyword: string): string {
+  const kw = keyword.toLowerCase();
+  if (/buy|price|cheap|deal|discount|coupon|order|purchase|shop|pricing/.test(kw)) return "transactional";
+  if (/best|top|review|vs|compare|alternative|comparison/.test(kw)) return "commercial";
+  if (/how|what|why|when|where|guide|tutorial|tips|learn|example|template/.test(kw)) return "informational";
+  return "navigational";
+}
+
+// ---------------------------------------------------------------------------
+// Opportunity score (fixed formula)
+// ---------------------------------------------------------------------------
+
+export function calculateOpportunityScore(
+  searchVolume: number,
+  difficulty: number,
+  cpc: number,
+  seoClicks?: number | null,
+): number {
+  // Use clicks if available (more actionable), otherwise volume
+  const trafficSignal = seoClicks ?? searchVolume;
+
+  // Normalize to 0-100 with proper curve
+  const volumeScore = Math.min(100, Math.log10(Math.max(trafficSignal, 1) + 1) * 30);
+  const difficultyScore = Math.max(0, 100 - difficulty);
+  const cpcScore = Math.min(100, cpc * 15);
+
+  // Weighted: traffic potential 35%, difficulty 40%, commercial value 25%
+  return Math.round(volumeScore * 0.35 + difficultyScore * 0.4 + cpcScore * 0.25);
+}
+
+// ---------------------------------------------------------------------------
+// 1. Domain Keywords (v2 — getMostValuableKeywords)
+// ---------------------------------------------------------------------------
+
 export async function getDomainKeywords(
   apiKey: string,
   domain: string,
-  maxResults: number = 50
+  maxResults: number = 50,
 ): Promise<SpyfuKeywordResult[]> {
-  const url = new URL(SPYFU_DOMAIN_ORGANIC_URL);
-  url.searchParams.set("q", domain);
-  url.searchParams.set("r", String(maxResults));
+  const url = new URL(`${BASE_URL}/serp_api/v2/seo/getMostValuableKeywords`);
+  url.searchParams.set("query", domain);
+  url.searchParams.set("pageSize", String(maxResults));
+  url.searchParams.set("sortBy", "SearchVolume");
+  url.searchParams.set("sortOrder", "Descending");
+  url.searchParams.set("countryCode", "US");
 
-  const response = await fetch(url.toString(), {
-    headers: buildHeaders(apiKey),
-  });
+  const headers = buildHeaders();
+  applyAuth(url, headers, apiKey);
+  const response = await fetch(url.toString(), { headers });
 
   if (!response.ok) {
     const text = await response.text();
@@ -44,71 +160,170 @@ export async function getDomainKeywords(
   }
 
   const data = await response.json();
+  const results = data?.results ?? data;
 
-  // SpyFu returns a flat array of results
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(results)) return [];
 
-  return data.map((item: any) => ({
-    keyword: item.term || "",
-    searchVolume: item.exact_local_monthly_search_volume || 0,
-    keywordDifficulty: item.seo_difficulty || 0,
-    cpc: item.exact_cost_per_click || item.phrase_cost_per_click || 0,
-    intent: classifyIntent(item.term || ""),
+  return results.map((item: any) => ({
+    keyword: item.keyword || item.term || "",
+    searchVolume: item.searchVolume ?? item.exact_local_monthly_search_volume ?? 0,
+    keywordDifficulty: item.keywordDifficulty ?? item.seo_difficulty ?? 0,
+    cpc: item.exactCostPerClick ?? item.exact_cost_per_click ?? item.broadCostPerClick ?? 0,
+    intent: classifyIntent(item.keyword || item.term || ""),
+    rankingPosition: item.rank ?? null,
+    rankingPositionChange: item.rankChange ?? null,
+    rankingUrl: item.topRankedUrl ?? null,
+    seoClicks: item.seoClicks ?? null,
+    seoClicksChange: item.seoClicksChange ?? null,
+    totalMonthlyClicks: item.totalMonthlyClicks ?? null,
+    percentMobileSearches: item.percentMobileSearches != null ? Math.round(item.percentMobileSearches * 100) : null,
+    percentOrganicClicks: item.percentOrganicClicks != null ? Math.round(item.percentOrganicClicks * 100) : null,
+    percentNotClicked: item.percentNotClicked != null ? Math.round(item.percentNotClicked * 100) : null,
+    serpFeatures: item.serpFeaturesCsv ?? null,
+    serpFirstResult: item.serpFirstResult ?? null,
+    isQuestion: item.isQuestion ?? false,
+    paidCompetitors: item.paidCompetitors ?? null,
+    rankingHomepages: item.rankingHomepages ?? null,
   }));
 }
 
-/**
- * Get related keywords for a seed keyword.
- * SpyFu does not have a direct "related keywords" endpoint, so we use the
- * domain organic keywords API with the seed keyword as a domain query to
- * find domains ranking for it, then pull their keywords.
- *
- * This is a two-step process:
- * 1. Find top domain ranking for the seed keyword (via organic_kws with the keyword)
- * 2. Pull that domain's organic keywords to discover related terms
- *
- * Falls back to returning empty if the keyword doesn't map to any domain.
- */
+// ---------------------------------------------------------------------------
+// 2. Related Keywords (v2 — getRelatedKeywords) — REAL DATA, NOT FAKE
+// ---------------------------------------------------------------------------
+
 export async function getRelatedKeywords(
   apiKey: string,
   keyword: string,
-  maxResults: number = 50
+  maxResults: number = 50,
 ): Promise<SpyfuKeywordResult[]> {
-  // Step 1: Try getting domains that rank for this keyword by using organic_kws
-  // with the keyword. SpyFu organic_kws endpoint accepts domains only,
-  // so we need to find a domain first. We'll search for a common domain
-  // in the niche by using the keyword as a domain hint.
-  //
-  // Since SpyFu doesn't have a related-keywords endpoint,
-  // we return an empty array and let the caller use an alternative method.
-  return [];
+  const url = new URL(`${BASE_URL}/keyword_api/v2/related/getRelatedKeywords`);
+  url.searchParams.set("query", keyword);
+  url.searchParams.set("pageSize", String(maxResults));
+  url.searchParams.set("sortBy", "SearchVolume");
+  url.searchParams.set("sortOrder", "Descending");
+  url.searchParams.set("countryCode", "US");
+
+  const headers = buildHeaders();
+  applyAuth(url, headers, apiKey);
+  const response = await fetch(url.toString(), { headers });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SpyFu Related Keywords API error (${response.status}): ${text}`);
+  }
+
+  const data = await response.json();
+  const results = data?.results ?? data;
+
+  if (!Array.isArray(results)) return [];
+
+  return results.map((item: any) => ({
+    keyword: item.keyword || "",
+    searchVolume: item.searchVolume ?? item.liveSearchVolume ?? 0,
+    keywordDifficulty: item.rankingDifficulty ?? 0,
+    cpc: item.exactCostPerClick ?? item.broadCostPerClick ?? 0,
+    intent: classifyIntent(item.keyword || ""),
+    rankingPosition: null, // Related keywords don't have rank for a specific domain
+    rankingPositionChange: null,
+    rankingUrl: null,
+    seoClicks: null,
+    seoClicksChange: null,
+    totalMonthlyClicks: item.totalMonthlyClicks ?? null,
+    percentMobileSearches: item.percentMobileSearches != null ? Math.round(item.percentMobileSearches * 100) : null,
+    percentOrganicClicks: item.percentOrganicClicks != null ? Math.round(item.percentOrganicClicks * 100) : null,
+    percentNotClicked: item.percentSearchesNotClicked != null ? Math.round(item.percentSearchesNotClicked * 100) : null,
+    serpFeatures: item.serpFeaturesCsv ?? null,
+    serpFirstResult: item.serpFirstResult ?? null,
+    isQuestion: item.isQuestion ?? false,
+    paidCompetitors: item.paidCompetitors ?? null,
+    rankingHomepages: item.rankingHomepages ?? null,
+  }));
 }
 
-/**
- * Simple intent classification based on keyword patterns.
- */
-function classifyIntent(keyword: string): string {
-  const kw = keyword.toLowerCase();
-  if (/buy|price|cheap|deal|discount|coupon|order|purchase|shop/.test(kw)) return "transactional";
-  if (/best|top|review|vs|compare|alternative/.test(kw)) return "commercial";
-  if (/how|what|why|when|where|guide|tutorial|tips|learn/.test(kw)) return "informational";
-  return "navigational";
+// ---------------------------------------------------------------------------
+// 3. Domain Stats (v2 — getLatestDomainStats)
+// ---------------------------------------------------------------------------
+
+export async function getDomainStats(
+  apiKey: string,
+  domain: string,
+): Promise<SpyfuDomainStats | null> {
+  const url = new URL(`${BASE_URL}/domain_stats_api/v2/getLatestDomainStats`);
+  url.searchParams.set("domain", domain);
+  url.searchParams.set("countryCode", "US");
+
+  const headers = buildHeaders();
+  applyAuth(url, headers, apiKey);
+  const response = await fetch(url.toString(), { headers });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SpyFu Domain Stats API error (${response.status}): ${text}`);
+  }
+
+  const data = await response.json();
+  const results = data?.results;
+
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  // Return latest month's stats
+  const latest = results[0];
+  return {
+    domain: data.domain ?? domain,
+    strength: latest.strength ?? 0,
+    monthlyOrganicClicks: Math.round(latest.monthlyOrganicClicks ?? 0),
+    monthlyOrganicValue: Math.round(latest.monthlyOrganicValue ?? 0),
+    totalOrganicResults: latest.totalOrganicResults ?? 0,
+    averageOrganicRank: Math.round((latest.averageOrganicRank ?? 0) * 10) / 10,
+    monthlyBudget: Math.round(latest.monthlyBudget ?? 0),
+    totalAdsPurchased: latest.totalAdsPurchased ?? 0,
+    monthlyPaidClicks: Math.round(latest.monthlyPaidClicks ?? 0),
+    searchMonth: latest.searchMonth ?? 0,
+    searchYear: latest.searchYear ?? 0,
+  };
 }
 
-/**
- * Calculate opportunity score (0-100) based on search volume, difficulty, and CPC.
- * High volume + low difficulty + decent CPC = high opportunity.
- */
-export function calculateOpportunityScore(
-  searchVolume: number,
-  difficulty: number,
-  cpc: number
-): number {
-  // Normalize components to 0-100 scale
-  const volumeScore = Math.min(searchVolume / 100, 100); // 10k+ gets max
-  const difficultyScore = Math.max(0, 100 - difficulty);  // lower difficulty = higher score
-  const cpcScore = Math.min(cpc * 20, 100);               // $5+ CPC gets max
+// ---------------------------------------------------------------------------
+// 4. Keyword Gap / Kombat (v2 — getCompetingSeoKeywords)
+// ---------------------------------------------------------------------------
 
-  // Weighted average: volume 40%, difficulty 40%, CPC 20%
-  return Math.round(volumeScore * 0.4 + difficultyScore * 0.4 + cpcScore * 0.2);
+export async function getKeywordGap(
+  apiKey: string,
+  domains: string[],
+  isIntersection: boolean = false,
+  maxResults: number = 50,
+): Promise<SpyfuKombatResult[]> {
+  const url = new URL(`${BASE_URL}/keyword_api/v2/kombat/getCompetingSeoKeywords`);
+  url.searchParams.set("includeDomainsCsv", domains.join(","));
+  url.searchParams.set("isIntersection", String(isIntersection));
+  url.searchParams.set("pageSize", String(maxResults));
+  url.searchParams.set("sortBy", "SearchVolume");
+  url.searchParams.set("sortOrder", "Descending");
+  url.searchParams.set("countryCode", "US");
+
+  const headers = buildHeaders();
+  applyAuth(url, headers, apiKey);
+  const response = await fetch(url.toString(), { headers });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SpyFu Kombat API error (${response.status}): ${text}`);
+  }
+
+  const data = await response.json();
+  const results = data?.results ?? data;
+
+  if (!Array.isArray(results)) return [];
+
+  return results.map((item: any) => ({
+    keyword: item.keyword || "",
+    searchVolume: item.searchVolume ?? 0,
+    keywordDifficulty: item.rankingDifficulty ?? 0,
+    cpc: item.exactCostPerClick ?? item.broadCostPerClick ?? 0,
+    totalMonthlyClicks: item.totalMonthlyClicks ?? null,
+    percentOrganicClicks: item.percentOrganicClicks != null ? Math.round(item.percentOrganicClicks * 100) : null,
+    serpFeatures: item.serpFeaturesCsv ?? null,
+    serpFirstResult: item.serpFirstResult ?? null,
+    isQuestion: item.isQuestion ?? false,
+  }));
 }
