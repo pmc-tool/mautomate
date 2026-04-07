@@ -460,19 +460,34 @@ model SeoAgentPost {
 }
 
 model SeoAgentKeyword {
-  id                  String    @id @default(uuid())
-  createdAt           DateTime  @default(now())
-  agent               SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  agentId             String
-  user                User      @relation(fields: [userId], references: [id])
-  userId              String
-  keyword             String
-  searchVolume        Int?
-  keywordDifficulty   Int?
-  cpc                 Float?
-  intent              String?                            // informational | navigational | commercial | transactional
-  opportunityScore    Int?
-  source              String    @default("spyfu")        // spyfu | manual
+  id                      String    @id @default(uuid())
+  createdAt               DateTime  @default(now())
+  agent                   SeoAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId                 String
+  user                    User      @relation(fields: [userId], references: [id])
+  userId                  String
+  keyword                 String
+  searchVolume            Int?
+  keywordDifficulty       Int?
+  cpc                     Float?
+  intent                  String?                        // informational | navigational | commercial | transactional
+  opportunityScore        Int?
+  source                  String    @default("spyfu")    // spyfu | openai | manual
+  // Rich fields from SpyFu v2
+  rankingPosition         Int?                           // Current organic rank (1-100)
+  rankingPositionChange   Int?                           // Rank change vs last month
+  rankingUrl              String?                        // URL ranking for this keyword
+  seoClicks               Int?                           // Estimated monthly organic clicks
+  seoClicksChange         Int?                           // Click trend month-over-month
+  totalMonthlyClicks      Int?                           // Total SERP clicks (organic + paid)
+  percentMobileSearches   Int?                           // Mobile search % (0-100)
+  percentOrganicClicks    Int?                           // Organic click % (0-100)
+  percentNotClicked       Int?                           // Zero-click rate % (0-100)
+  serpFeatures            String?                        // CSV: Images,Videos,Maps,Shopping
+  serpFirstResult         String?                        // Domain currently #1
+  isQuestion              Boolean   @default(false)      // Is this a question keyword
+  paidCompetitors         Int?                           // Number of advertisers
+  rankingHomepages        Int?                           // Homepages in top 100
 }
 
 model SeoAgentCluster {

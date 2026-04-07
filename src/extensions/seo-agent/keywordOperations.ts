@@ -6,6 +6,8 @@ import type {
   DeleteSeoKeyword,
   ClusterKeywords,
   GetSeoAgentClusters,
+  FetchDomainStats,
+  FetchKeywordGap,
 } from "wasp/server/operations";
 import OpenAI from "openai";
 import * as z from "zod";
@@ -13,7 +15,10 @@ import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import {
   getRelatedKeywords,
   getDomainKeywords,
+  getDomainStats,
+  getKeywordGap,
   calculateOpportunityScore,
+  type SpyfuKeywordResult,
 } from "./spyfuClient";
 import { deductCredits, refundCredits } from "../../credits/creditService";
 import { CreditActionType } from "../../credits/creditConfig";
@@ -113,20 +118,27 @@ export const researchKeywords: ResearchKeywords<any, any> = async (
   await deductCredits(prisma, context.user.id, CreditActionType.KeywordResearch, { agentId: agent.id });
 
   // Fetch keywords
-  let results: Array<{
-    keyword: string;
-    searchVolume: number;
-    keywordDifficulty: number;
-    cpc: number;
-    intent?: string;
-  }>;
+  let results: SpyfuKeywordResult[] = [];
+  let usedSource = "spyfu";
 
   if (args.source === "domain" && args.domain) {
-    // Domain-based research via SpyFu
-    const apiKey = await getSpyfuApiKey(context.entities.Setting);
-    results = await getDomainKeywords(apiKey, args.domain);
+    // Domain-based research via SpyFu v2
+    let apiKey: string;
+    try {
+      apiKey = await getSpyfuApiKey(context.entities.Setting);
+    } catch (err) {
+      await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "SpyFu API key not configured");
+      throw err;
+    }
+    try {
+      results = await getDomainKeywords(apiKey, args.domain);
+      usedSource = "spyfu";
+    } catch (error: any) {
+      await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "SpyFu API call failed");
+      throw new HttpError(500, `Competitor analysis failed: ${error?.message || "SpyFu API error"}. Credits have been refunded.`);
+    }
   } else {
-    // Related keyword research via OpenAI (SpyFu lacks this endpoint)
+    // Related keyword research — try SpyFu v2 first, fall back to OpenAI
     const seedKeywords = (agent.seedKeywords as string[]) || [];
     const seedKeyword = args.keyword || seedKeywords[0];
 
@@ -137,14 +149,37 @@ export const researchKeywords: ResearchKeywords<any, any> = async (
       );
     }
 
-    const openai = await getOpenAIClient(context.entities.Setting);
+    // Try SpyFu Related Keywords API first (REAL data)
+    let spyfuApiKey: string | null = null;
+    try {
+      spyfuApiKey = await getSpyfuApiKey(context.entities.Setting);
+    } catch {
+      // SpyFu key not configured — will fall back to OpenAI
+    }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert SEO keyword researcher. Given a seed keyword, generate a list of related keywords that would be valuable for SEO content planning. For each keyword, provide realistic estimates for search volume, keyword difficulty (0-100), and CPC in USD.
+    if (spyfuApiKey) {
+      try {
+        results = await getRelatedKeywords(spyfuApiKey, seedKeyword);
+        usedSource = "spyfu";
+      } catch (error: any) {
+        // SpyFu failed — fall back to OpenAI
+        console.warn("[researchKeywords] SpyFu related keywords failed, falling back to OpenAI:", error.message);
+      }
+    }
+
+    // Fall back to OpenAI if SpyFu unavailable or returned nothing
+    if (results.length === 0) {
+      const openai = await getOpenAIClient(context.entities.Setting);
+      usedSource = "openai";
+
+      let completion;
+      try {
+        completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert SEO keyword researcher. Given a seed keyword, generate a list of related keywords that would be valuable for SEO content planning. For each keyword, provide realistic estimates for search volume, keyword difficulty (0-100), and CPC in USD.
 
 Return a JSON object with this exact structure:
 {
@@ -161,30 +196,57 @@ Return a JSON object with this exact structure:
 
 Intent must be one of: "informational", "commercial", "transactional", "navigational".
 Generate 20-30 diverse keywords including long-tail variations, questions, and commercial intent terms.`,
-        },
-        {
-          role: "user",
-          content: `Generate related SEO keywords for: "${seedKeyword}"`,
-        },
-      ],
-      max_tokens: 2048,
-      response_format: { type: "json_object" },
-    });
+            },
+            {
+              role: "user",
+              content: `Generate related SEO keywords for: "${seedKeyword}"`,
+            },
+          ],
+          max_tokens: 2048,
+          response_format: { type: "json_object" },
+        });
+      } catch (error) {
+        await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "AI keyword research failed");
+        throw error;
+      }
 
-    const raw = completion.choices[0]?.message?.content;
-    if (!raw) {
-      await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "Empty AI response");
-      throw new HttpError(500, "AI returned an empty response.");
+      const raw = completion.choices[0]?.message?.content;
+      if (!raw) {
+        await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "Empty AI response");
+        throw new HttpError(500, "AI returned an empty response.");
+      }
+
+      let parsed: { keywords: Array<{ keyword: string; searchVolume: number; keywordDifficulty: number; cpc: number; intent?: string }> };
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "Failed to parse AI response");
+        throw new HttpError(500, "Failed to parse AI keyword response.");
+      }
+
+      // Convert OpenAI results to SpyfuKeywordResult shape
+      results = (parsed.keywords || []).map((k) => ({
+        keyword: k.keyword,
+        searchVolume: k.searchVolume,
+        keywordDifficulty: k.keywordDifficulty,
+        cpc: k.cpc,
+        intent: k.intent || "informational",
+        rankingPosition: null,
+        rankingPositionChange: null,
+        rankingUrl: null,
+        seoClicks: null,
+        seoClicksChange: null,
+        totalMonthlyClicks: null,
+        percentMobileSearches: null,
+        percentOrganicClicks: null,
+        percentNotClicked: null,
+        serpFeatures: null,
+        serpFirstResult: null,
+        isQuestion: false,
+        paidCompetitors: null,
+        rankingHomepages: null,
+      }));
     }
-
-    let parsed: { keywords: typeof results };
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      throw new HttpError(500, "Failed to parse AI keyword response.");
-    }
-
-    results = parsed.keywords || [];
   }
 
   if (results.length === 0) {
@@ -210,7 +272,7 @@ Generate 20-30 diverse keywords including long-tail variations, questions, and c
     return { added: 0 };
   }
 
-  // Create new keyword records
+  // Create new keyword records with all rich v2 fields
   const createData = newResults.map((r) => ({
     agentId: args.agentId,
     userId: context.user!.id,
@@ -223,8 +285,24 @@ Generate 20-30 diverse keywords including long-tail variations, questions, and c
       r.searchVolume || 0,
       r.keywordDifficulty || 0,
       r.cpc || 0,
+      r.seoClicks,
     ),
-    source: "spyfu",
+    source: usedSource,
+    // Rich SpyFu v2 fields
+    rankingPosition: r.rankingPosition ?? null,
+    rankingPositionChange: r.rankingPositionChange ?? null,
+    rankingUrl: r.rankingUrl ?? null,
+    seoClicks: r.seoClicks ?? null,
+    seoClicksChange: r.seoClicksChange ?? null,
+    totalMonthlyClicks: r.totalMonthlyClicks ?? null,
+    percentMobileSearches: r.percentMobileSearches ?? null,
+    percentOrganicClicks: r.percentOrganicClicks ?? null,
+    percentNotClicked: r.percentNotClicked ?? null,
+    serpFeatures: r.serpFeatures ?? null,
+    serpFirstResult: r.serpFirstResult ?? null,
+    isQuestion: r.isQuestion ?? false,
+    paidCompetitors: r.paidCompetitors ?? null,
+    rankingHomepages: r.rankingHomepages ?? null,
   }));
 
   await context.entities.SeoAgentKeyword.createMany({
@@ -510,4 +588,79 @@ export const getSeoAgentClusters: GetSeoAgentClusters<any, any> = async (
     },
     orderBy: { createdAt: "desc" },
   });
+};
+
+// ---------------------------------------------------------------------------
+// Action: fetchDomainStats (SpyFu v2 Domain Stats)
+// ---------------------------------------------------------------------------
+
+const fetchDomainStatsSchema = z.object({
+  domain: z.string().min(1, "Domain is required"),
+});
+
+export const fetchDomainStats: FetchDomainStats<any, any> = async (
+  rawArgs,
+  context,
+) => {
+  if (!context.user) {
+    throw new HttpError(401, "Not authenticated");
+  }
+
+  await ensureExtensionActive(
+    context.entities.UserExtension,
+    context.user.id,
+  );
+
+  const args = ensureArgsSchemaOrThrowHttpError(fetchDomainStatsSchema, rawArgs);
+
+  const apiKey = await getSpyfuApiKey(context.entities.Setting);
+
+  try {
+    // Fetch both domain stats AND organic keywords in parallel
+    const [stats, organicKeywords] = await Promise.all([
+      getDomainStats(apiKey, args.domain),
+      getDomainKeywords(apiKey, args.domain, 50).catch(() => []),
+    ]);
+    return { stats, organicKeywords };
+  } catch (error: any) {
+    throw new HttpError(500, `Domain analysis failed: ${error?.message || "SpyFu API error"}`);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Action: fetchKeywordGap (SpyFu v2 Kombat)
+// ---------------------------------------------------------------------------
+
+const fetchKeywordGapSchema = z.object({
+  domains: z.array(z.string()).min(2, "At least 2 domains required").max(3, "Maximum 3 domains"),
+  isIntersection: z.boolean().default(false),
+});
+
+export const fetchKeywordGap: FetchKeywordGap<any, any> = async (
+  rawArgs,
+  context,
+) => {
+  if (!context.user) {
+    throw new HttpError(401, "Not authenticated");
+  }
+
+  await ensureExtensionActive(
+    context.entities.UserExtension,
+    context.user.id,
+  );
+
+  const args = ensureArgsSchemaOrThrowHttpError(fetchKeywordGapSchema, rawArgs);
+
+  const apiKey = await getSpyfuApiKey(context.entities.Setting);
+
+  // Deduct credits for keyword gap analysis
+  await deductCredits(prisma, context.user.id, CreditActionType.KeywordResearch, { type: "keyword_gap" });
+
+  try {
+    const results = await getKeywordGap(apiKey, args.domains, args.isIntersection);
+    return { keywords: results, domains: args.domains, isIntersection: args.isIntersection };
+  } catch (error: any) {
+    await refundCredits(prisma, context.user.id, CreditActionType.KeywordResearch, "Keyword gap analysis failed");
+    throw new HttpError(500, `Keyword gap analysis failed: ${error?.message || "SpyFu API error"}. Credits refunded.`);
+  }
 };

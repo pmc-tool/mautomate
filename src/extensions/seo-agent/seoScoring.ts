@@ -259,60 +259,108 @@ export function calculateSeoScore(data: {
     });
   }
 
-  // 11. Internal links (5pts)
+  // 10b. Heading hierarchy check (3pts bonus)
   {
-    const linkMatches = data.content.match(/<a\s[^>]*>/gi);
-    const count = linkMatches ? linkMatches.length : 0;
-    const good = count >= 1;
+    const h1Count = (data.content.match(/<h1[^>]*>/gi) || []).length;
+    const h2Count = (data.content.match(/<h2[^>]*>/gi) || []).length;
+    const h3Count = (data.content.match(/<h3[^>]*>/gi) || []).length;
+    const goodH1 = h1Count <= 1; // 0 or 1 H1 is fine (title usually serves as H1)
+    const goodStructure = h2Count >= 1 && (h3Count === 0 || h2Count >= 1);
+    const score = (goodH1 ? 2 : 0) + (goodStructure ? 1 : 0);
     breakdown.push({
-      name: 'Internal links',
-      score: good ? 5 : 0,
-      maxScore: 5,
-      passed: good,
-      detail: good
-        ? `Found ${count} link(s) in content.`
-        : 'No links found in content — add at least one.',
+      name: 'Heading hierarchy',
+      score,
+      maxScore: 3,
+      passed: score >= 2,
+      detail: `H1: ${h1Count}, H2: ${h2Count}, H3: ${h3Count}.${
+        h1Count > 1 ? ' Multiple H1 tags found — use only one.' : ''
+      }${h2Count === 0 ? ' Add H2 headings to structure content.' : ''}`,
     });
   }
 
-  // 12. Image alt text (5pts)
+  // 11. Links — internal vs external (5pts)
   {
-    const imgWithAlt = data.content.match(/<img\s[^>]*alt\s*=\s*"[^"]+"/gi);
-    const count = imgWithAlt ? imgWithAlt.length : 0;
-    const good = count >= 1;
+    const linkMatches = data.content.match(/<a\s[^>]*href\s*=\s*"([^"]*)"/gi) || [];
+    const totalLinks = linkMatches.length;
+    const externalLinks = linkMatches.filter((l: string) => /https?:\/\//i.test(l)).length;
+    const internalLinks = totalLinks - externalLinks;
+    const hasInternal = internalLinks >= 1 || totalLinks >= 2;
+    const hasExternal = externalLinks >= 1;
+    const score = (hasInternal ? 3 : 0) + (hasExternal ? 2 : 0);
     breakdown.push({
-      name: 'Image alt text',
-      score: good ? 5 : 0,
+      name: 'Links (internal + external)',
+      score,
       maxScore: 5,
-      passed: good,
-      detail: good
-        ? `Found ${count} image(s) with alt text.`
+      passed: score >= 3,
+      detail: `${internalLinks} internal link(s), ${externalLinks} external link(s). ${
+        !hasInternal ? 'Add internal links to related pages. ' : ''
+      }${!hasExternal ? 'Add external links to authoritative sources.' : ''}`.trim() || 'Good link structure.',
+    });
+  }
+
+  // 12. Image alt text with keyword (5pts)
+  {
+    const imgWithAlt = data.content.match(/<img\s[^>]*alt\s*=\s*"([^"]*)"/gi) || [];
+    const count = imgWithAlt.length;
+    const hasAlt = count >= 1;
+    const kwInAlt = hasKeyword && imgWithAlt.some((match: string) => {
+      const alt = match.match(/alt\s*=\s*"([^"]*)"/i)?.[1] || '';
+      return alt.toLowerCase().includes(keyword);
+    });
+    const score = (hasAlt ? 3 : 0) + (kwInAlt ? 2 : 0);
+    breakdown.push({
+      name: 'Image optimization',
+      score,
+      maxScore: 5,
+      passed: score >= 3,
+      detail: hasAlt
+        ? `${count} image(s) with alt text.${kwInAlt ? ' Keyword found in alt text.' : ' Add primary keyword to image alt text.'}`
         : 'No images with alt text found — add at least one image with descriptive alt text.',
     });
   }
 
-  // 13. Readability (10pts)
+  // 13. Readability — Flesch Reading Ease (10pts)
   {
     let score = 0;
     let detail = '';
     if (totalWords === 0) {
       detail = 'Content has no words to assess readability.';
     } else {
-      // Simple metric: count sentence-ending punctuation
+      // Count sentences
       const sentenceEnders = plainContent.match(/[.!?]+/g);
-      const sentenceCount = sentenceEnders ? sentenceEnders.length : 1;
+      const sentenceCount = Math.max(sentenceEnders ? sentenceEnders.length : 1, 1);
       const avgSentenceLength = totalWords / sentenceCount;
-      const good = avgSentenceLength < 25;
-      score = good ? 10 : 0;
-      detail = good
-        ? `Average sentence length is ${avgSentenceLength.toFixed(1)} words (under 25 — good readability).`
-        : `Average sentence length is ${avgSentenceLength.toFixed(1)} words (should be under 25).`;
+
+      // Estimate syllables (English approximation)
+      const syllableCount = plainContent.toLowerCase().split(/\s+/).reduce((sum: number, word: string) => {
+        const w = word.replace(/[^a-z]/g, '');
+        if (w.length <= 3) return sum + 1;
+        let syllables = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').match(/[aeiouy]{1,2}/g);
+        return sum + Math.max(syllables ? syllables.length : 1, 1);
+      }, 0);
+      const avgSyllablesPerWord = syllableCount / Math.max(totalWords, 1);
+
+      // Flesch Reading Ease = 206.835 - 1.015 * ASL - 84.6 * ASW
+      const flesch = Math.round(206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord));
+      const clampedFlesch = Math.max(0, Math.min(100, flesch));
+
+      // Score: 60+ is good (8-10 pts), 40-59 is OK (4-7 pts), <40 is hard (0-3 pts)
+      if (clampedFlesch >= 60) {
+        score = 10;
+        detail = `Flesch Reading Ease: ${clampedFlesch} (easy to read). Avg sentence: ${avgSentenceLength.toFixed(0)} words.`;
+      } else if (clampedFlesch >= 40) {
+        score = 5;
+        detail = `Flesch Reading Ease: ${clampedFlesch} (fairly difficult). Simplify sentences — avg ${avgSentenceLength.toFixed(0)} words per sentence.`;
+      } else {
+        score = 2;
+        detail = `Flesch Reading Ease: ${clampedFlesch} (very difficult). Use shorter sentences and simpler words — avg ${avgSentenceLength.toFixed(0)} words per sentence.`;
+      }
     }
     breakdown.push({
-      name: 'Readability',
+      name: 'Readability (Flesch)',
       score,
       maxScore: 10,
-      passed: score > 0,
+      passed: score >= 5,
       detail,
     });
   }

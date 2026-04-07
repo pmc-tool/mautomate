@@ -842,6 +842,18 @@ page SeoAgentDetailPage {
   component: import SeoAgentDetailPage from "@src/extensions/seo-agent/SeoAgentDetailPage"
 }
 
+route KeywordResearchRoute { path: "/seo/keywords", to: KeywordResearchPage }
+page KeywordResearchPage {
+  authRequired: true,
+  component: import KeywordResearchPage from "@src/extensions/seo-agent/KeywordResearchPage"
+}
+
+route SeoArticlesRoute { path: "/seo/articles", to: SeoArticlesPage }
+page SeoArticlesPage {
+  authRequired: true,
+  component: import SeoArticlesPage from "@src/extensions/seo-agent/SeoArticlesPage"
+}
+
 // Agent CRUD
 query getSeoAgents {
   fn: import { getSeoAgents } from "@src/extensions/seo-agent/operations",
@@ -1032,6 +1044,17 @@ action generateArticleFromBrief {
 query getContentBriefs {
   fn: import { getContentBriefs } from "@src/extensions/seo-agent/briefOperations",
   entities: [SeoAgentContentBrief, UserExtension]
+}
+
+// Domain stats & keyword gap (SpyFu v2)
+action fetchDomainStats {
+  fn: import { fetchDomainStats } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [UserExtension, Setting]
+}
+
+action fetchKeywordGap {
+  fn: import { fetchKeywordGap } from "@src/extensions/seo-agent/keywordOperations",
+  entities: [UserExtension, Setting]
 }
 //#endregion
 

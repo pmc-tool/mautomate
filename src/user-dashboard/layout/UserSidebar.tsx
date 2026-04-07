@@ -4,9 +4,11 @@ import {
   Columns3,
   DollarSign,
   FileUp,
+  FileText,
   Film,
   Gift,
   ImagePlus,
+  Lock,
   Inbox,
   LayoutDashboard,
   Video,
@@ -16,6 +18,7 @@ import {
   Settings,
   Share2,
   Store,
+  TrendingUp,
   Wallet,
   X,
   type LucideIcon,
@@ -55,6 +58,10 @@ const UserSidebar = ({ sidebarOpen, setSidebarOpen }: UserSidebarProps) => {
   const activeExtensions = enabledExtensions.filter((ext) =>
     userExtensions?.some((ue) => ue.extensionId === ext.id && ue.isActive)
   );
+
+  const hasSeoAgent = activeExtensions.some((ext) => ext.id === "seo-agent");
+  const seoExtensionEnabled = enabledExtensions.some((ext) => ext.id === "seo-agent");
+  const nonSeoExtensions = activeExtensions.filter((ext) => ext.id !== "seo-agent");
 
   const storedSidebarExpanded = localStorage.getItem("user-sidebar-expanded");
   const [sidebarExpanded, setSidebarExpanded] = useState(
@@ -223,41 +230,102 @@ const UserSidebar = ({ sidebarOpen, setSidebarOpen }: UserSidebarProps) => {
             </ul>
           </div>
 
-          {/* Post Hub — visible when either agent extension is active */}
-          {activeExtensions.some((ext) => ext.id === "social-media-agent" || ext.id === "seo-agent") && (
+          {/* SEO & Content — always visible when SEO extension exists (locked or active) */}
+          {(hasSeoAgent || seoExtensionEnabled || activeExtensions.some((ext) => ext.id === "social-media-agent")) && (
             <div>
               <h3 className="text-muted-foreground mb-4 ml-4 text-sm font-semibold">
-                CONTENT
+                SEO & CONTENT
               </h3>
               <ul className="mb-6 flex flex-col gap-1.5">
-                <li>
-                  <NavLink to="/post-hub" className={({ isActive }) =>
-                    linkClassName({ isActive: isActive || location.pathname.startsWith("/post-hub") })
-                  }>
-                    <Columns3 />
-                    Post Hub
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/content-calendar" className={({ isActive }) =>
-                    linkClassName({ isActive: isActive || location.pathname.startsWith("/content-calendar") })
-                  }>
-                    <Calendar />
-                    Content Calendar
-                  </NavLink>
-                </li>
+                {/* SEO Agent Projects */}
+                {hasSeoAgent ? (
+                  <li>
+                    <NavLink to="/extensions/seo-agent" className={({ isActive }) =>
+                      linkClassName({ isActive: isActive || location.pathname.startsWith("/extensions/seo-agent") })
+                    }>
+                      <Search />
+                      SEO Projects
+                    </NavLink>
+                  </li>
+                ) : seoExtensionEnabled ? (
+                  <li>
+                    <NavLink to="/marketplace" className={linkClassName}>
+                      <Search />
+                      <span className="flex items-center gap-2">
+                        SEO Projects
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      </span>
+                    </NavLink>
+                  </li>
+                ) : null}
+
+                {/* Keyword Research */}
+                {hasSeoAgent ? (
+                  <li>
+                    <NavLink to="/seo/keywords" className={({ isActive }) =>
+                      linkClassName({ isActive: isActive || location.pathname.startsWith("/seo/keywords") })
+                    }>
+                      <TrendingUp />
+                      Keyword Research
+                    </NavLink>
+                  </li>
+                ) : seoExtensionEnabled ? (
+                  <li>
+                    <NavLink to="/marketplace" className={linkClassName}>
+                      <TrendingUp />
+                      <span className="flex items-center gap-2">
+                        Keyword Research
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      </span>
+                    </NavLink>
+                  </li>
+                ) : null}
+
+                {/* All Articles */}
+                {hasSeoAgent && (
+                  <li>
+                    <NavLink to="/seo/articles" className={({ isActive }) =>
+                      linkClassName({ isActive: isActive || location.pathname.startsWith("/seo/articles") })
+                    }>
+                      <FileText />
+                      All Articles
+                    </NavLink>
+                  </li>
+                )}
+
+                {/* Post Hub — visible when either agent is active */}
+                {(hasSeoAgent || activeExtensions.some((ext) => ext.id === "social-media-agent")) && (
+                  <>
+                    <li>
+                      <NavLink to="/post-hub" className={({ isActive }) =>
+                        linkClassName({ isActive: isActive || location.pathname.startsWith("/post-hub") })
+                      }>
+                        <Columns3 />
+                        Post Hub
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/content-calendar" className={({ isActive }) =>
+                        linkClassName({ isActive: isActive || location.pathname.startsWith("/content-calendar") })
+                      }>
+                        <Calendar />
+                        Content Calendar
+                      </NavLink>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
           )}
 
-          {/* Extensions */}
-          {activeExtensions.length > 0 && (
+          {/* Extensions — non-SEO extensions */}
+          {nonSeoExtensions.length > 0 && (
             <div>
               <h3 className="text-muted-foreground mb-4 ml-4 text-sm font-semibold">
                 EXTENSIONS
               </h3>
               <ul className="mb-6 flex flex-col gap-1.5">
-                {activeExtensions.map((ext) => {
+                {nonSeoExtensions.map((ext) => {
                   const Icon = EXTENSION_ICON_MAP[ext.icon] || ImagePlus;
                   return (
                     <li key={ext.id}>
