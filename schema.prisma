@@ -73,6 +73,8 @@ model User {
   earnerCommissions         AffiliateCommission[] @relation("affiliateEarner")
   affiliateWithdrawals      AffiliateWithdrawal[]
   referredByCode            String?
+
+  tutorials                 Tutorial[]
 }
 
 
@@ -936,4 +938,21 @@ model AffiliateWithdrawal {
   processedBy     String?
   rejectionReason String?
   transactionId   String?
+}
+
+// ---------------------------------------------------------------------------
+// Tutorial Module
+// ---------------------------------------------------------------------------
+
+model Tutorial {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  author       User     @relation(fields: [authorId], references: [id])
+  authorId     String
+  title        String
+  embedCode    String
+  status       String   @default("draft") // draft | published
+  publishedAt  DateTime?
+  sortOrder    Int      @default(0)
 }

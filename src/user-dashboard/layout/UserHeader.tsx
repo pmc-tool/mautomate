@@ -1,4 +1,6 @@
 import { type AuthUser } from "wasp/auth";
+import { Link } from "react-router";
+import { GraduationCap } from "lucide-react";
 import DarkModeSwitcher from "../../client/components/DarkModeSwitcher";
 import { cn } from "../../client/utils";
 import { UserDropdown } from "../../user/UserDropdown";
@@ -74,6 +76,18 @@ const UserHeader = (props: {
         </div>
 
         <ul className="2xsm:gap-4 flex items-center gap-2">
+          {/* <!-- Tutorial Link --> */}
+          <li>
+            <Link
+              to="/tutorials"
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm font-medium transition-colors"
+            >
+              <GraduationCap size={18} />
+              <span className="hidden sm:inline">Tutorial</span>
+            </Link>
+          </li>
+          {/* <!-- Tutorial Link --> */}
+
           {/* <!-- Dark Mode Toggler --> */}
           <DarkModeSwitcher />
           {/* <!-- Dark Mode Toggler --> */}

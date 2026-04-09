@@ -129,6 +129,18 @@ query getPublishedBlogPostBySlug {
 }
 //#endregion
 
+//#region Tutorial
+route TutorialPageRoute { path: "/tutorials", to: TutorialPage }
+page TutorialPage {
+  component: import TutorialPage from "@src/tutorial/TutorialPage"
+}
+
+query getPublishedTutorials {
+  fn: import { getPublishedTutorials } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+//#endregion
+
 //#region Help Center
 route ArticlesPageRoute { path: "/articles", to: ArticlesPage }
 page ArticlesPage {
@@ -416,6 +428,37 @@ action deleteBlogPost {
 action setBlogPostStatus {
   fn: import { setBlogPostStatus } from "@src/blog/operations",
   entities: [BlogPost, User]
+}
+
+route AdminTutorialRoute { path: "/admin/tutorials", to: AdminTutorialPage }
+page AdminTutorialPage {
+  authRequired: true,
+  component: import AdminTutorialPage from "@src/admin/dashboards/tutorial/AdminTutorialPage"
+}
+
+query getAdminTutorials {
+  fn: import { getAdminTutorials } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action createTutorial {
+  fn: import { createTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action updateTutorial {
+  fn: import { updateTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action deleteTutorial {
+  fn: import { deleteTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action setTutorialStatus {
+  fn: import { setTutorialStatus } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
 }
 
 route AdminArticlesRoute { path: "/admin/articles", to: AdminArticlesPage }
