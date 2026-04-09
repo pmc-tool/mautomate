@@ -78,7 +78,9 @@ export default function App() {
       location.pathname === "/articles" ||
       location.pathname.startsWith("/articles/") ||
       location.pathname === "/docs" ||
-      location.pathname.startsWith("/docs/")
+      location.pathname.startsWith("/docs/") ||
+      location.pathname === "/terms" ||
+      location.pathname === "/privacy"
     );
   }, [location]);
 

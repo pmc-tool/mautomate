@@ -129,6 +129,18 @@ query getPublishedBlogPostBySlug {
 }
 //#endregion
 
+//#region Legal
+route TermsPageRoute { path: "/terms", to: TermsPage }
+page TermsPage {
+  component: import TermsPage from "@src/legal/TermsPage"
+}
+
+route PrivacyPageRoute { path: "/privacy", to: PrivacyPage }
+page PrivacyPage {
+  component: import PrivacyPage from "@src/legal/PrivacyPage"
+}
+//#endregion
+
 //#region Help Center
 route ArticlesPageRoute { path: "/articles", to: ArticlesPage }
 page ArticlesPage {
