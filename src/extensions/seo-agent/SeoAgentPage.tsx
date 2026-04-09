@@ -99,7 +99,7 @@ export default function SeoAgentPage({ user }: { user: AuthUser }) {
           {/* Left Content */}
           <div className="relative z-10 w-full px-5 py-12 lg:w-[600px] lg:px-11 lg:py-16">
             <div className="mb-3 flex items-center gap-2">
-              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs dark:bg-white/20 dark:text-white dark:border-white/30">
+              <Badge className="bg-[#bd711d]/20 text-[#bd711d] border-[#bd711d]/30 text-xs ">
                 <Zap className="mr-1 h-3 w-3" />
                 AI-Powered
               </Badge>
@@ -109,10 +109,10 @@ export default function SeoAgentPage({ user }: { user: AuthUser }) {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl dark:text-gray-800">
               SEO Agent
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-white/70 max-w-md">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-gray-700 max-w-md">
               Create AI agents that research keywords, analyze competitors, and generate SEO-optimized content that ranks on search engines.
             </p>
             <div className="mt-5">

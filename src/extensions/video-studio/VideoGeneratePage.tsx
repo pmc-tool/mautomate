@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import type { AuthUser } from "wasp/auth";
 import { useQuery } from "wasp/client/operations";
-import { generateVideo, getVideoProjects } from "wasp/client/operations";
+import { generateVideo, getVideoProjects, improveVideoPrompt } from "wasp/client/operations";
 import { VIDEO_MODELS, type VideoModel } from "./modelRegistry";
 import { type PromptTemplate } from "./promptTemplates";
 import { ModelSelector } from "./components/ModelSelector";
@@ -30,6 +30,7 @@ import {
   ChevronUp,
   Film,
   ImageIcon,
+  Loader2,
   Sparkles,
   User,
   Wand2,
@@ -181,6 +182,7 @@ export default function VideoGeneratePage({ user }: { user: AuthUser }) {
   const [showNegative, setShowNegative] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultId, setResultId] = useState<string | null>(null);
 
@@ -657,20 +659,47 @@ export default function VideoGeneratePage({ user }: { user: AuthUser }) {
                     </div>
                   )}
 
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={
-                      genType === "avatar"
-                        ? "Write the script for your AI presenter..."
-                        : "Describe the video you want to generate..."
-                    }
-                    rows={6}
-                    className={cn(
-                      inputCls,
-                      "w-full px-4 py-3 h-auto resize-none",
+                  <div className="relative">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder={
+                        genType === "avatar"
+                          ? "Write the script for your AI presenter..."
+                          : "Describe the video you want to generate..."
+                      }
+                      rows={6}
+                      className={cn(
+                        inputCls,
+                        "w-full px-4 py-3 h-auto resize-none scrollbar-hide",
+                      )}
+                    />
+                    {prompt.trim().length >= 5 && (
+                      <button
+                        type="button"
+                        disabled={isEnhancing}
+                        onClick={async () => {
+                          setIsEnhancing(true);
+                          try {
+                            const result = await improveVideoPrompt({ prompt });
+                            setPrompt(result.improved);
+                          } catch (err: any) {
+                            setError(err.message || "Failed to enhance prompt");
+                          } finally {
+                            setIsEnhancing(false);
+                          }
+                        }}
+                        className="absolute bottom-3 right-3 text-[#bd711d]/60 hover:text-[#bd711d] transition-colors disabled:opacity-50"
+                        title="Enhance prompt with AI (2 credits)"
+                      >
+                        {isEnhancing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                      </button>
                     )}
-                  />
+                  </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">

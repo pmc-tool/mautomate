@@ -6,6 +6,7 @@ const staticNavigationItems: NavigationItem[] = [
   { name: "Articles", to: "/articles" },
   { name: "Documentation", to: DocsUrl },
   { name: "Blog", to: BlogUrl },
+  { name: "Tutorial", to: "/tutorials" },
 ];
 
 export const marketingNavigationItems: NavigationItem[] = [

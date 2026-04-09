@@ -1,17 +1,23 @@
-import aiReady from "../client/static/landing/ai-ready.png";
+import aiReadydark from "../client/static/landing/ai-ready-dark.png";
+import aiReadywhite from "../client/static/landing/ai-ready-white.png";
+
 import playIcon from "../client/static/landing/play-icon.svg";
 import numberOval from "../client/static/landing/number-oval.svg";
 
 export default function AIReady() {
   return (
-    <div className="mx-auto my-16 flex max-w-[1200px] flex-col items-center gap-[32px] px-4 sm:my-24 sm:px-6 md:my-32 md:flex-row md:items-start md:gap-[50px] lg:gap-[90px] lg:px-8">
+    <div className="mx-auto my-16 flex max-w-7xl flex-col items-center  px-4 sm:my-24 sm:px-6 md:my-32 md:flex-row md:items-center md:gap-[50px] lg:gap-12 lg:px-8">
       {/* Left: AI Ready illustration with floating labels */}
-      <div className="relative mx-auto h-[280px] w-full max-w-[340px] shrink-0 overflow-hidden sm:h-[350px] sm:max-w-[400px] md:h-[436px] md:max-w-[449px]">
+      <div className="relative mx-auto h-[280px] w-full max-w-4xl shrink-0 overflow-hidden sm:h-[350px] sm:max-w-[400px] md:h-[436px] md:max-w-[449px]">
         <img
-          src={aiReady}
+          src={aiReadywhite}
           alt="AI Ready"
-          className="absolute inset-0 h-full w-[115.81%] max-w-none object-cover"
-          style={{ left: "-8.24%" }}
+          className="absolute inset-0 h-full w-full object-cover dark:hidden"
+        />
+        <img
+          src={aiReadydark}
+          alt="AI Ready"
+          className="absolute inset-0 hidden h-full w-full object-cover dark:block"
         />
         {/* Play button overlay — uses percentage positioning */}
         <div className="absolute left-[45%] top-[43%] flex h-[44px] w-[44px] items-center justify-center rounded-full bg-[#bd711d] p-[12px] sm:h-[50px] sm:w-[50px] sm:p-[14px] md:h-[58px] md:w-[58px] md:p-[16px]">
@@ -49,7 +55,7 @@ export default function AIReady() {
       </div>
 
       {/* Right: Text content */}
-      <div className="flex w-full max-w-[535px] flex-col gap-[24px] sm:gap-[32px]">
+      <div className="flex w-full max-w-[535px] flex-col gap-[24px] sm:gap-[32px] mt-8 md:mt-0">
         <div className="flex flex-col gap-[8px]">
           <h2 className="text-[28px] font-semibold leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[36px] md:text-[44px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
             Results-Driven Automation
@@ -61,11 +67,10 @@ export default function AIReady() {
 
         {/* Numbered features */}
         <div className="flex flex-col gap-[24px]">
-          <div className="flex gap-[16px] sm:gap-[20px]">
-            <div className="shrink-0 rounded-full border border-[#f6e7d5] p-[8px] sm:p-[10px]">
-              <div className="relative flex h-[32px] w-[32px] items-center justify-center overflow-hidden sm:h-[36px] sm:w-[36px]">
-                <img src={numberOval} alt="" className="absolute inset-[5.56%] h-full w-full" />
-                <span className="relative text-[14px] font-semibold text-[#2e2e2e] sm:text-[16px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>1</span>
+          <div className="flex gap-4 sm:gap-5xl">
+            <div>
+              <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
+                <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">1</h1>
               </div>
             </div>
             <div className="flex flex-col gap-[8px] sm:gap-[10px]">
@@ -79,10 +84,9 @@ export default function AIReady() {
           </div>
 
           <div className="flex gap-[16px] sm:gap-[20px]">
-            <div className="shrink-0 rounded-full border border-[#f6e7d5] p-[8px] sm:p-[10px]">
-              <div className="relative flex h-[32px] w-[32px] items-center justify-center overflow-hidden sm:h-[36px] sm:w-[36px]">
-                <img src={numberOval} alt="" className="absolute inset-[5.56%] h-full w-full" />
-                <span className="relative text-[14px] font-semibold text-[#2e2e2e] sm:text-[16px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>2</span>
+            <div>
+              <div className=" rounded-full border border-[#f6e7d5] flex h-14 w-14 items-center justify-center">
+                <h1 className="flex items-center justify-center bg-[#EEE4DD] dark:bg-card rounded-full h-10 w-10">2</h1>
               </div>
             </div>
             <div className="flex flex-col gap-[8px] sm:gap-[10px]">

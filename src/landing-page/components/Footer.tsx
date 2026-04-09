@@ -1,5 +1,7 @@
-import footerLogo from "../../client/static/logo.png";
 import { useBranding } from "../../branding/BrandingContext";
+import useColorMode from "../../client/hooks/useColorMode";
+import footerLogoLight from "../../client/static/logo-light.png";
+import footerLogoDark from "../../client/static/logo-dark2.png";
 
 interface NavigationItem {
   name: string;
@@ -15,17 +17,18 @@ export default function Footer({
   };
 }) {
   const branding = useBranding();
+  const [colorMode] = useColorMode();
   const currentYear = new Date().getFullYear();
   const primaryColor = branding.primaryColor || "#bd711d";
   const darkerPrimary = darkenColor(primaryColor, 0.15);
-  const logoSrc = branding.logoUrl || footerLogo;
+  const defaultLogo = colorMode === "dark" ? footerLogoDark : footerLogoLight;
   const copyrightText = branding.copyrightText || `${currentYear} ${branding.domain || "mAutomate.ai"}. All rights reserved.`;
   const termsUrl = branding.termsUrl || "/terms";
   const privacyUrl = branding.privacyUrl || "/privacy";
 
   return (
     <footer className="bg-[#f8f4f1] dark:bg-card">
-      <div className="mx-auto max-w-[1280px] px-4 pb-[20px] pt-0 sm:px-6 md:px-8 lg:px-[95px]">
+      <div className="mx-auto max-w-7xl px-4 pb-[20px] pt-0 md:px-6">
         {/* Main content area with bottom border */}
         <div className="border-b border-[rgba(10,15,20,0.08)] pb-[20px] pt-[60px] sm:pt-[80px] md:pt-[100px] lg:pt-[132px] dark:border-border">
           <div className="flex flex-col gap-10 md:flex-row md:justify-between md:gap-8">
@@ -59,7 +62,7 @@ export default function Footer({
                 <ul className="mt-[24px] space-y-[12px] sm:mt-[36px] sm:space-y-[14px]">
                   {footerNavigation.integrations.map((item) => (
                     <li key={item.name}>
-                      <a
+                      <a target="_blank"
                         href={item.href}
                         className="text-[14px] font-medium leading-[22.5px] text-[#0a0f14] transition-colors hover:text-[#bd711d] sm:text-[15px] dark:text-foreground dark:hover:text-primary"
                         style={{ fontFamily: "'Poppins', sans-serif" }}
@@ -101,7 +104,7 @@ export default function Footer({
         </div>
 
         {/* Watermark area: big logo with top fade */}
-        <div className="relative mt-[20px] h-[120px] sm:h-[160px] lg:h-[220px]">
+        <div className="relative mt-[20px] h-[120px] overflow-hidden sm:h-[160px] lg:h-[220px]">
           {/* Top fade-out gradient overlay — light mode */}
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[80px] sm:h-[105px] dark:hidden"
@@ -109,14 +112,19 @@ export default function Footer({
           />
           {/* Top fade-out gradient overlay — dark mode */}
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-[80px] bg-gradient-to-b from-card to-transparent sm:h-[105px] dark:block"
+            className="pointer-events-none inset-x-0 top-0 z-10 hidden h-[80px] absolute from-card to-transparent sm:h-[105px] dark:block"
           />
-          {/* Big logo as watermark — full width, centered */}
+          {/* Big logo as watermark — light mode */}
           <img
-            src={logoSrc}
+            src={footerLogoLight}
             alt={branding.appName}
-            onError={(e) => { (e.target as HTMLImageElement).src = footerLogo; }}
-            className="absolute bottom-0 left-1/2 z-0 h-auto w-[90%] max-w-[900px] -translate-x-1/2 object-contain opacity-30 sm:w-[85%] dark:opacity-10"
+            className="absolute  left-1/2 w-full -translate-x-1/2 object-contain dark:hidden"
+          />
+          {/* Big logo as watermark — dark mode */}
+          <img
+            src={footerLogoDark}
+            alt={branding.appName}
+            className="absolute  left-1/2 hidden w-full -translate-x-1/2   dark:block"
           />
         </div>
 
@@ -127,14 +135,14 @@ export default function Footer({
           </p>
           <div className="flex gap-[16px] sm:gap-[27px]">
             <a
-              href={termsUrl.startsWith("http") ? termsUrl : `https://${branding.domain || "mautomate.ai"}${termsUrl}`}
+              href={termsUrl}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
               Terms of Service
             </a>
             <a
-              href={privacyUrl.startsWith("http") ? privacyUrl : `https://${branding.domain || "mautomate.ai"}${privacyUrl}`}
+              href={privacyUrl}
               className="text-[13px] font-medium leading-[22.5px] text-[#7c7f85] transition-colors hover:text-[#0a0f14] sm:text-[15px] dark:text-muted-foreground dark:hover:text-foreground"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >

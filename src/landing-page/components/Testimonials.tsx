@@ -13,7 +13,7 @@ export default function Testimonials({
   testimonials: Testimonial[];
 }) {
   return (
-    <div className="mx-auto my-16 flex max-w-[1196px] flex-col items-center gap-[24px] px-4 sm:my-24 sm:gap-[40px] sm:px-6 md:my-32 lg:px-8">
+    <div className="mx-auto my-16 flex max-w-7xl flex-col items-center gap-[24px] px-4 sm:my-24 sm:gap-[40px] md:px-6 md:my-32">
       <div className="flex flex-col items-center gap-[12px] text-center">
         <h2 className="text-[26px] font-semibold leading-[1.2] tracking-[0.44px] text-[#0a0f14] sm:text-[36px] md:text-[44px] dark:text-foreground" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
           What Our Users Say

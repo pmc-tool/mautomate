@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { cn } from "../../client/utils";
-import featureTabScreenshot from "../../client/static/landing/feature-tab-screenshot.png";
+import socialConnect from "../../client/static/landing/screen/social-connect.png";
+import chatBot from "../../client/static/landing/screen/chatbot.png";
+import brandVoice from "../../client/static/landing/screen/brand-voice.png";
+import aiImage from "../../client/static/landing/screen/ai-image.png";
+import socialMediaAgetn from "../../client/static/landing/screen/social-media-agent.png";
+import seoAgent from "../../client/static/landing/screen/seo-agent.png";
 
 interface FeatureTab {
   name: string;
   subtitle: string;
   title: string;
   description: string;
+  light: string;
 }
 
 const tabs: FeatureTab[] = [
@@ -16,6 +22,8 @@ const tabs: FeatureTab[] = [
     title: "Social Connect",
     description:
       "Writer is designed to help you generate high-quality texts instantly, without breaking a sweat. With our intuitive interface and powerful features, you can easily edit, export, or publish your AI-generated result.",
+    light: socialConnect,
+
   },
   {
     name: "Brand Voice",
@@ -23,6 +31,8 @@ const tabs: FeatureTab[] = [
     title: "Brand Voice",
     description:
       "Create consistent brand voice profiles that guide all AI-generated content. Ensure every post, email, and message sounds authentically you across all channels.",
+    light: brandVoice,
+
   },
   {
     name: "Chatbot",
@@ -30,6 +40,8 @@ const tabs: FeatureTab[] = [
     title: "Chatbot",
     description:
       "Deploy AI chatbots trained on your data across websites, WhatsApp, Messenger, and more. Handle support, capture leads, and engage visitors 24/7.",
+    light: chatBot,
+
   },
   {
     name: "AI Image Generator",
@@ -37,6 +49,8 @@ const tabs: FeatureTab[] = [
     title: "AI Image Generator",
     description:
       "Create professional marketing images, social media graphics, and ad creatives with AI. No design skills required — just describe what you need.",
+    light: aiImage,
+
   },
   {
     name: "Social Media Agent",
@@ -44,6 +58,8 @@ const tabs: FeatureTab[] = [
     title: "Social Media Agent",
     description:
       "Let AI handle your social media strategy. Auto-generate posts, optimize timing, respond to engagement, and grow your following on autopilot.",
+    light: socialMediaAgetn,
+
   },
   {
     name: "SEO Agent",
@@ -51,6 +67,8 @@ const tabs: FeatureTab[] = [
     title: "SEO Agent",
     description:
       "Generate SEO-optimized blog posts, meta descriptions, and content briefs. Rank higher with AI that understands search intent and your brand voice.",
+    light: seoAgent,
+
   },
 ];
 
@@ -59,10 +77,9 @@ export default function FeatureTabs() {
   const active = tabs[activeTab];
 
   return (
-    <div className="mx-auto my-16 max-w-[1138px] px-4 sm:my-24 sm:px-6 md:my-32 lg:px-8">
-      <div className="overflow-hidden rounded-[20px] bg-[#9b7e69] sm:rounded-[32px] dark:bg-card">
-        {/* Tab buttons — horizontal scroll on mobile, grid on tablet, flex on desktop */}
-        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4 pt-4 sm:gap-[16px] sm:px-6 sm:pt-6 md:flex-wrap md:justify-center md:gap-[20px] md:px-8 lg:flex-nowrap lg:gap-[32px] lg:px-[64px] lg:pt-[32px]">
+    <div className="mx-auto my-16 max-w-7xl px-4 sm:my-24 md:px-6 md:my-32">
+      <div className="overflow-hidden rounded-4xl bg-[#9b7e69] sm:rounded-8xl dark:bg-card">
+        <div className="-mb-px flex gap-[12px] overflow-x-auto px-4 pt-4 sm:gap-[16px] sm:px-6 sm:pt-6 md:gap-[20px] md:px-8  lg:justify-center lg:gap-[32px] lg:px-[64px] lg:pt-[32px]">
           {tabs.map((tab, idx) => (
             <button
               key={tab.name}
@@ -79,21 +96,23 @@ export default function FeatureTabs() {
         </div>
 
         {/* Content area — stack on mobile, side-by-side on desktop */}
-        <div className="flex flex-col gap-[24px] px-4 pb-6 pt-6 sm:gap-[32px] sm:px-6 sm:pb-8 sm:pt-8 md:px-8 lg:flex-row lg:gap-[40px] lg:px-[64px] lg:pb-0 lg:pt-[56px]">
+      
+        <div className="md:flex items-center gap-6 overflow-hidden p-8 md:p-16  " >
           {/* Left: Screenshot */}
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1">
-            <div className="absolute inset-[8px] overflow-hidden rounded-[6px] sm:inset-[12px] sm:rounded-[8px]">
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] bg-white/5 shadow-[0px_20px_50px_0px_rgba(0,0,0,0.1)] sm:rounded-[20px] lg:h-[390px] lg:flex-1/2">
+            <div className="absolute inset-[8px] overflow-hidden rounded-2xl sm:inset-[12px] sm:rounded-2xl">
               <img
-                src={featureTabScreenshot}
+                src={active.light}
                 alt={active.title}
-                className="h-full w-full rounded-[7px] object-cover"
+                className="h-full w-full rounded-2xl object-cover"
               />
             </div>
           </div>
 
           {/* Right: Description */}
-          <div className="flex flex-col gap-[12px] pb-4 text-white sm:gap-[20px] lg:w-[380px] lg:shrink-0 lg:pb-0 lg:pt-[103px]">
-            <p className="text-[24px] font-semibold leading-[1.2] tracking-[0.4px] sm:text-[32px] lg:text-[40px]" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
+         
+          <div className="flex-1/2 flex  flex-col gap-3  text-white sm:gap-5  pt-4 md:p-4 ">
+            <p className="text-xl font-semibold leading-[1.2] tracking-[0.4px] sm:text-[32px] lg:text-[40px]" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
               {active.title}
             </p>
             <p className="text-[14px] leading-[1.5] opacity-60 sm:text-[15px] sm:leading-[22px] lg:text-[17px] lg:leading-[24px]">

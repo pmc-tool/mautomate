@@ -246,9 +246,9 @@
   }
 
   .dark {
-    --background: 210 50% 5%;
+    --background: 30 10% 8%;
     --foreground: 0 0% 98%;
-    --card: 210 50% 5%;
+    --card: 16 12% 14%;
     --card-foreground: 0 0% 98%;
     --card-accent: 31 57% 93%;
     --card-accent-foreground: 0 0% 3.9%;
@@ -329,4 +329,33 @@
 }
 .apexcharts-xaxistooltip-bottom:before {
   @apply dark:border-b-muted!;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* FullCalendar toolbar button overrides */
+.fc .fc-button-active {
+  color: #fff !important;
+}
+.dark .fc .fc-button-active {
+  color: #0a0f14 !important;
+}
+.fc .fc-button:hover {
+  color: #fff !important;
+}
+.dark .fc .fc-button:hover {
+  color: #0a0f14 !important;
+}
+.fc .fc-today-button:hover {
+  color: #000 !important;
+}
+.dark .fc .fc-today-button:hover {
+  color: #fff !important;
 }

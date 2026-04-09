@@ -129,6 +129,18 @@ query getPublishedBlogPostBySlug {
 }
 //#endregion
 
+//#region Tutorial
+route TutorialPageRoute { path: "/tutorials", to: TutorialPage }
+page TutorialPage {
+  component: import TutorialPage from "@src/tutorial/TutorialPage"
+}
+
+query getPublishedTutorials {
+  fn: import { getPublishedTutorials } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+//#endregion
+
 //#region Help Center
 route ArticlesPageRoute { path: "/articles", to: ArticlesPage }
 page ArticlesPage {
@@ -418,6 +430,37 @@ action setBlogPostStatus {
   entities: [BlogPost, User]
 }
 
+route AdminTutorialRoute { path: "/admin/tutorials", to: AdminTutorialPage }
+page AdminTutorialPage {
+  authRequired: true,
+  component: import AdminTutorialPage from "@src/admin/dashboards/tutorial/AdminTutorialPage"
+}
+
+query getAdminTutorials {
+  fn: import { getAdminTutorials } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action createTutorial {
+  fn: import { createTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action updateTutorial {
+  fn: import { updateTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action deleteTutorial {
+  fn: import { deleteTutorial } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
+action setTutorialStatus {
+  fn: import { setTutorialStatus } from "@src/tutorial/operations",
+  entities: [Tutorial, User]
+}
+
 route AdminArticlesRoute { path: "/admin/articles", to: AdminArticlesPage }
 page AdminArticlesPage {
   authRequired: true,
@@ -464,6 +507,21 @@ action deleteHelpArticle {
 action setHelpArticleStatus {
   fn: import { setHelpArticleStatus } from "@src/help-center/operations",
   entities: [HelpArticle, User]
+}
+
+route AboutPageRoute { path: "/about", to: AboutPage }
+page AboutPage {
+  component: import AboutPage from "@src/landing-page/AboutPage"
+}
+
+route TermsPageRoute { path: "/terms", to: TermsPage }
+page TermsPage {
+  component: import TermsPage from "@src/landing-page/TermsPage"
+}
+
+route PrivacyPageRoute { path: "/privacy", to: PrivacyPage }
+page PrivacyPage {
+  component: import PrivacyPage from "@src/landing-page/PrivacyPage"
 }
 
 route NotFoundRoute { path: "*", to: NotFoundPage }
@@ -1399,6 +1457,11 @@ action retryVideoGeneration {
 action deleteVideoGeneration {
   fn: import { deleteVideoGeneration } from "@src/extensions/video-studio/generationOperations",
   entities: [VideoGeneration, UserExtension]
+}
+
+action improveVideoPrompt {
+  fn: import { improveVideoPrompt } from "@src/extensions/video-studio/generationOperations",
+  entities: [UserExtension, Setting, User, CreditTransaction]
 }
 
 // Job: Poll fal.ai for processing videos
